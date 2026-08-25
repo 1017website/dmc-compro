@@ -1,0 +1,6 @@
+@extends('cms.layouts.app')
+@section('title','Kelola User')
+@section('content')
+<div class="page-head"><div><h1>User CMS</h1><p>Atur siapa yang dapat mengelola website dan hak aksesnya.</p></div><a class="button button-primary" href="{{ route('cms.users.create') }}">Tambah user</a></div>
+<div class="card table-wrap"><table class="table"><thead><tr><th>User</th><th>Role</th><th>Status</th><th>Login terakhir</th><th></th></tr></thead><tbody>@foreach($users as $user)<tr><td><strong>{{ $user->name }}</strong><br><span style="color:var(--muted)">{{ $user->email }}</span></td><td>{{ ucfirst($user->role) }}</td><td><span class="status {{ $user->is_active?'status-closed':'status-new' }}">{{ $user->is_active?'Aktif':'Nonaktif' }}</span></td><td>{{ $user->last_login_at?->diffForHumans() ?? 'Belum pernah' }}</td><td><div class="actions">@if($user->role!=='developer' || auth()->user()->role==='developer')<a class="button button-small" href="{{ route('cms.users.edit',$user) }}">Edit</a>@endif @if(!$user->is(auth()->user()) && $user->role!=='developer')<form method="post" action="{{ route('cms.users.destroy',$user) }}" onsubmit="return confirm('Hapus user ini?')">@csrf @method('DELETE')<button class="button button-small button-danger">Hapus</button></form>@endif</div></td></tr>@endforeach</tbody></table></div>
+@endsection
