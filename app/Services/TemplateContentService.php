@@ -266,6 +266,8 @@ class TemplateContentService
         $element = strtolower((string) ($state['element'] ?? ''));
 
         if (in_array($key, [
+            'text.0038', 'text.0039',
+            'text.0081', 'text.0082',
             'text.0083', 'text.0084', 'text.0085', 'text.0086', 'text.0087',
             'text.0089', 'text.0091', 'text.0093', 'text.0095', 'text.0096',
             'text.0097', 'text.0098', 'text.0099', 'text.0100', 'text.0101',
@@ -461,10 +463,13 @@ HTML;
             'eyebrow' => 'Label kecil', 'title' => 'Judul', 'description' => 'Deskripsi',
             'imageAlt' => 'Deskripsi gambar untuk Google', 'bullets' => 'Daftar poin (satu per baris)', 'tags' => 'Kategori (pisahkan dengan koma)',
         ];
-        $lines = ['salt' => 'Garam Industri', 'chemical' => 'Chemical Supply', 'water' => 'Water Treatment'];
+        $lines = ['salt' => 'Garam Industri', 'chemical' => 'Bahan Baku Kimia untuk Industri'];
         $defaults = [];
         if (preg_match('/window\.__dmcBaseBusinessLines\s*=\s*(\{.*?\});\s*var businessLines/s', $this->source(), $match)) {
             $defaults = json_decode($match[1], true) ?: [];
+        }
+        if (isset($defaults['chemical'])) {
+            $defaults['chemical']['eyebrow'] = '50% Portofolio · Bahan Baku Kimia untuk Industri';
         }
         $fields = [];
         foreach ($lines as $line => $lineLabel) {

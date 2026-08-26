@@ -7,6 +7,7 @@ use App\Models\SiteContent;
 use App\Models\SiteSetting;
 use App\Models\User;
 use App\Services\TemplateContentService;
+use Database\Seeders\SiteContentTranslationSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -22,7 +23,12 @@ class CmsWebsiteTest extends TestCase
 
         $response->assertOk()
             ->assertSee('DMC Pro | Mitra Bisnis PT Garam', false)
+            ->assertSee('<html lang="id">', false)
+            ->assertSee("var preferred = 'id'", false)
             ->assertSee('class="hero"', false)
+            ->assertSee('Bahan Baku Kimia untuk Industri', false)
+            ->assertSee('50% garam industri dan 50% bahan baku kimia untuk industri.', false)
+            ->assertSee('data-business="water" hidden aria-hidden="true"', false)
             ->assertSee('id="inquiry-form"', false);
     }
 
@@ -73,12 +79,44 @@ class CmsWebsiteTest extends TestCase
         $this->assertContains('Hero', collect($fields)->pluck('group')->all());
         $this->assertNotContains('SEO', collect($fields)->pluck('group')->all());
         $this->assertFalse(collect($fields)->contains(fn (array $field) => str_contains($field['label'], 'Aria Label')));
+        $this->assertFalse(collect($fields)->contains(fn (array $field) => str_starts_with($field['key'], 'dynamic.business.water.')));
 
         SiteContent::query()->create([
             'content_key' => 'text.0001', 'group_name' => 'SEO', 'label' => 'Title',
             'type' => 'text', 'value_id' => 'Judul DMC Pro Baru',
         ]);
         $this->assertStringContainsString('<title>Judul DMC Pro Baru</title>', $service->render());
+    }
+
+    public function test_translation_seeder_populates_all_languages_without_overwriting_edits(): void
+    {
+        $this->seed(SiteContentTranslationSeeder::class);
+
+        $this->assertSame(174, SiteContent::query()->count());
+        $this->assertSame(0, SiteContent::query()
+            ->whereNull('value_id')->orWhereNull('value_en')->orWhereNull('value_zh')
+            ->count());
+
+        $this->assertDatabaseHas('site_contents', [
+            'content_key' => 'text.0037',
+            'value_id' => 'Bahan Baku Kimia untuk Industri',
+            'value_en' => 'Industrial Chemical Raw Materials',
+            'value_zh' => '工业化工原料',
+        ]);
+        $this->assertDatabaseHas('site_contents', [
+            'content_key' => 'dynamic.business.chemical.eyebrow',
+            'value_id' => '50% Portofolio · Bahan Baku Kimia untuk Industri',
+            'value_en' => '50% Portfolio · Industrial Chemical Raw Materials',
+            'value_zh' => '50% 业务占比 · 工业化工原料',
+        ]);
+
+        SiteContent::query()->where('content_key', 'text.0037')->update(['value_en' => 'Custom English']);
+        $this->seed(SiteContentTranslationSeeder::class);
+
+        $this->assertDatabaseHas('site_contents', [
+            'content_key' => 'text.0037',
+            'value_en' => 'Custom English',
+        ]);
     }
 
     public function test_branding_assets_can_be_uploaded_and_rendered(): void

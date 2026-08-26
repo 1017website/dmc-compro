@@ -13,6 +13,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call(SiteContentTranslationSeeder::class);
+
         User::query()->updateOrCreate(
             ['email' => '1017website@gmail.com'],
             [

@@ -416,7 +416,7 @@ video {
 
 .portfolio-minor {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
 }
 
 .portfolio-minor > div {
@@ -424,7 +424,12 @@ video {
 }
 
 .portfolio-minor > div + div {
-  border-left: 1px solid rgba(255, 255, 255, 0.16);
+  border-left: 0;
+}
+
+.portfolio-minor > div[hidden],
+.business-tabs button[hidden] {
+  display: none !important;
 }
 
 .portfolio-minor strong {
@@ -687,7 +692,7 @@ video {
 
 .business-tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   margin-top: 70px;
   border-top: 1px solid #c9c8c5;
   border-left: 1px solid #c9c8c5;
@@ -1937,7 +1942,7 @@ video {
   }
 
   .portfolio-minor {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
 
   .portfolio-minor > div + div {
@@ -2691,11 +2696,11 @@ body[data-language="zh"] .hero h1 { letter-spacing: -.045em; }
       </div>
       <div class="portfolio-split" aria-label="Komposisi bidang usaha">
         <div class="portfolio-main">
-          <strong>50</strong><span>%</span><p>Industrial Salt</p>
+          <strong>50</strong><span>%</span><p>Garam Industri</p>
         </div>
         <div class="portfolio-minor">
-          <div><strong>25%</strong><p>Chemical</p></div>
-          <div><strong>25%</strong><p>Industrial Water Treatment</p></div>
+          <div><strong>50%</strong><p>Bahan Baku Kimia untuk Industri</p></div>
+          <div hidden aria-hidden="true"><strong>0%</strong><p>Industrial Water Treatment</p></div>
         </div>
       </div>
     </div>
@@ -2761,7 +2766,7 @@ body[data-language="zh"] .hero h1 { letter-spacing: -.045em; }
     <div class="site-shell">
       <div class="section-heading center-heading">
         <p class="eyebrow"><span></span>Produk &amp; Bidang Usaha</p>
-        <h2>Satu mitra untuk tiga kebutuhan inti.</h2>
+        <h2>Dua lini utama untuk kebutuhan industri.</h2>
         <p>Portofolio DMC Pro dirancang untuk membantu pengadaan bahan baku dan peralatan industri secara lebih terkoordinasi.</p>
       </div>
       <div class="business-tabs" role="tablist" aria-label="Bidang usaha">
@@ -2769,10 +2774,10 @@ body[data-language="zh"] .hero h1 { letter-spacing: -.045em; }
           <span>01</span><strong>Garam Industri</strong><small>50% Portfolio</small>
         </button>
         <button type="button" role="tab" aria-selected="false" data-business="chemical">
-          <span>02</span><strong>Chemical Supply</strong><small>25% Portfolio</small>
+          <span>02</span><strong>Bahan Baku Kimia untuk Industri</strong><small>50% Portfolio</small>
         </button>
-        <button type="button" role="tab" aria-selected="false" data-business="water">
-          <span>03</span><strong>Water Treatment</strong><small>25% Portfolio</small>
+        <button type="button" role="tab" aria-selected="false" data-business="water" hidden aria-hidden="true">
+          <span>03</span><strong>Water Treatment</strong><small>0% Portfolio</small>
         </button>
       </div>
       <article class="business-panel business-salt" id="business-panel" role="tabpanel">
@@ -2832,7 +2837,7 @@ body[data-language="zh"] .hero h1 { letter-spacing: -.045em; }
     </div>
     <div class="site-shell video-partner-strip">
       <article><span>01</span><strong>Kemitraan PT Garam</strong><p>Peran DMC Pro dalam pemasaran dan distribusi bahan baku serta produk jadi.</p></article>
-      <article><span>02</span><strong>Portofolio Terintegrasi</strong><p>50% garam industri, 25% chemical, dan 25% industrial water treatment.</p></article>
+      <article><span>02</span><strong>Portofolio Terintegrasi</strong><p>50% garam industri dan 50% bahan baku kimia untuk industri.</p></article>
       <article><span>03</span><strong>Pasar Lokal &amp; Ekspor</strong><p>Koordinasi kebutuhan, stok, kemasan, dokumen, dan pengiriman.</p></article>
     </div>
   </section>
@@ -3133,7 +3138,7 @@ body[data-language="zh"] .hero h1 { letter-spacing: -.045em; }
         copy: 'DMC Pro menjadi mitra bisnis PT Garam (Persero) untuk pemasaran dan distribusi bahan baku serta produk jadi, didukung lini chemical dan industrial water treatment.',
         explore: 'Jelajahi Produk', video: 'Video Perusahaan', videoSmall: 'Putar video DMC Pro',
         chipSmall: 'Status Kemitraan', chipStrong: 'Business Partner · PT Garam (Persero)',
-        metrics: ['Garam Industri', 'Chemical', 'Industrial Water Treatment']
+        metrics: ['Garam Industri', 'Bahan Baku Kimia untuk Industri', 'Industrial Water Treatment']
       },
       trust: ['Pasokan lokal & ekspor', 'Bahan baku & produk jadi', 'Dukungan distribusi', 'Respons teknis terarah'],
       partner: {
@@ -3152,18 +3157,18 @@ body[data-language="zh"] .hero h1 { letter-spacing: -.045em; }
         facts:['Bidang Usaha','Jangkauan Pasar','Kemasan Karung','Ukuran Fleksibel'], localExport:'Lokal + Ekspor'
       },
       business: {
-        eyebrow:'Produk & Bidang Usaha', title:'Satu mitra untuk tiga kebutuhan industri.',
-        text:'DMC Pro memfokuskan 50% portofolio pada garam industri sebagai mitra PT Garam, dengan dukungan chemical dan industrial water treatment masing-masing 25%.',
-        tabs:[{label:'Garam Industri',share:'50% Portofolio'},{label:'Chemical',share:'25% Portofolio'},{label:'Industrial Water Treatment',share:'25% Portofolio'}],
+        eyebrow:'Produk & Bidang Usaha', title:'Dua lini utama untuk kebutuhan industri.',
+        text:'Portofolio DMC Pro dibagi seimbang: 50% garam industri dan 50% bahan baku kimia untuk kebutuhan industri.',
+        tabs:[{label:'Garam Industri',share:'50% Portofolio'},{label:'Bahan Baku Kimia untuk Industri',share:'50% Portofolio'},{label:'Industrial Water Treatment',share:'0% Portofolio'}],
         focus:'Fokus Bisnis', button:'Konsultasikan Kebutuhan',
         lines: {
           salt:{eyebrow:'Fokus Utama · Mitra PT Garam',title:'Bahan baku dan produk jadi untuk kebutuhan industri.',description:'Sebagai mitra bisnis PT Garam (Persero), DMC Pro mendukung pemasaran dan distribusi garam industri dalam bentuk bahan baku maupun produk jadi untuk pasar lokal dan ekspor.',bullets:['Bahan baku garam industri','Produk jadi siap distribusi','Pilihan kualitas dan kemasan','Distribusi lokal dan ekspor'],tags:['Bahan Baku','Produk Jadi','Industri','Pangan','Pakan','Ekspor'],imageAlt:'Portofolio bahan baku dan produk jadi garam industri'},
-          chemical:{eyebrow:'25% Portofolio · Chemical',title:'Pengadaan chemical dengan alur pasok yang terkoordinasi.',description:'DMC Pro mendukung pengadaan dan perdagangan bahan baku kimia untuk kebutuhan industri melalui proses sourcing, koordinasi impor, penyimpanan, dan distribusi.',bullets:['Sourcing bahan baku kimia','Pengadaan lokal dan impor','Koordinasi dokumen dan pengiriman','Pasokan sesuai kebutuhan industri'],tags:['Bahan Baku Industri','Impor','Procurement','Distribusi'],imageAlt:'Area penyimpanan dan distribusi chemical DMC Pro'},
-          water:{eyebrow:'25% Portofolio · Industrial Water Treatment',title:'Solusi water treatment untuk industri feed, food, dan kebutuhan umum.',description:'DMC Pro menyediakan dukungan industrial water treatment untuk industri pakan dan pangan, general water treatment, pompa air dan chemical, serta pemeliharaan dan perbaikan peralatan.',bullets:['Water treatment industri pakan','Water treatment industri pangan','General water treatment','Pompa, maintenance, dan technical support'],tags:['Feed Industry','Food Industry','General Water Treatment','Pump & Maintenance'],imageAlt:'Fasilitas pendukung industrial water treatment DMC Pro'}
+          chemical:{eyebrow:'50% Portofolio · Bahan Baku Kimia untuk Industri',title:'Pengadaan bahan baku kimia dengan alur pasok yang terkoordinasi.',description:'DMC Pro mendukung pengadaan dan perdagangan bahan baku kimia untuk kebutuhan industri melalui proses sourcing, koordinasi impor, penyimpanan, dan distribusi.',bullets:['Sourcing bahan baku kimia','Pengadaan lokal dan impor','Koordinasi dokumen dan pengiriman','Pasokan sesuai kebutuhan industri'],tags:['Bahan Baku Industri','Impor','Procurement','Distribusi'],imageAlt:'Area penyimpanan dan distribusi bahan baku kimia DMC Pro'},
+          water:{eyebrow:'Layanan Pendukung · Industrial Water Treatment',title:'Solusi water treatment untuk industri feed, food, dan kebutuhan umum.',description:'DMC Pro menyediakan dukungan industrial water treatment untuk industri pakan dan pangan, general water treatment, pompa air dan chemical, serta pemeliharaan dan perbaikan peralatan.',bullets:['Water treatment industri pakan','Water treatment industri pangan','General water treatment','Pompa, maintenance, dan technical support'],tags:['Feed Industry','Food Industry','General Water Treatment','Pump & Maintenance'],imageAlt:'Fasilitas pendukung industrial water treatment DMC Pro'}
         }
       },
       services:{eyebrow:'Dukungan Menyeluruh',title:'Dari kemitraan produk hingga dukungan operasional.',text:'Kami membantu pelanggan menata kebutuhan pasokan agar lebih jelas, terukur, dan sesuai ritme bisnis.',items:[{title:'Distribusi Produk PT Garam',text:'Pemasaran dan distribusi bahan baku serta produk jadi sesuai kebutuhan pelanggan.'},{title:'Pasar Lokal & Ekspor',text:'Dukungan pasokan untuk kebutuhan domestik dan perdagangan lintas negara.'},{title:'Koordinasi Logistik',text:'Koordinasi stok, kemasan, dokumen, dan jadwal distribusi hingga tujuan.'},{title:'Dukungan Teknis',text:'Solusi chemical, pompa, maintenance, dan industrial water treatment.'}]},
-      video:{eyebrow:'Video Profil & Kemitraan',title:'Lihat peran DMC dalam menghubungkan produk PT Garam ke kebutuhan industri.',text:'Modul video ini menampilkan profil perusahaan, kemitraan, kesiapan pasokan, dan jangkauan layanan DMC Pro. Video dapat diputar langsung maupun dalam layar penuh.',button:'Putar layar penuh',caption:'DMC PRO × PT GARAM (PERSERO)',strip:[{title:'Kemitraan PT Garam',text:'Peran DMC Pro dalam pemasaran dan distribusi bahan baku serta produk jadi.'},{title:'Portofolio Terintegrasi',text:'50% garam industri, 25% chemical, dan 25% industrial water treatment.'},{title:'Pasar Lokal & Ekspor',text:'Koordinasi kebutuhan, stok, kemasan, dokumen, dan pengiriman.'}]},
+      video:{eyebrow:'Video Profil & Kemitraan',title:'Lihat peran DMC dalam menghubungkan produk PT Garam ke kebutuhan industri.',text:'Modul video ini menampilkan profil perusahaan, kemitraan, kesiapan pasokan, dan jangkauan layanan DMC Pro. Video dapat diputar langsung maupun dalam layar penuh.',button:'Putar layar penuh',caption:'DMC PRO × PT GARAM (PERSERO)',strip:[{title:'Kemitraan PT Garam',text:'Peran DMC Pro dalam pemasaran dan distribusi bahan baku serta produk jadi.'},{title:'Portofolio Terintegrasi',text:'50% garam industri dan 50% bahan baku kimia untuk industri.'},{title:'Pasar Lokal & Ekspor',text:'Koordinasi kebutuhan, stok, kemasan, dokumen, dan pengiriman.'}]},
       gallery:{eyebrow:'Galeri Operasional',title:'Kesiapan lapangan yang membangun kepercayaan.',text:'Galeri menampilkan sumber produk, kondisi stok, sampel, dan fasilitas pendukung distribusi DMC Pro.',items:[{title:'Sumber Produksi',meta:'Garam · Indonesia',alt:'Aktivitas produksi garam di area tambak'},{title:'Kapasitas Gudang',meta:'Penyimpanan · Distribusi',alt:'Gudang penyimpanan dengan stok garam industri'},{title:'Stok Siap',meta:'Inventori · 50 kg',alt:'Stok karung garam tersusun di gudang'},{title:'Penyimpanan Terkendali',meta:'Fasilitas · Penanganan',alt:'Lorong fasilitas penyimpanan DMC Pro'},{title:'Sampel Produk',meta:'Sampel · Kualitas',alt:'Sampel bahan baku garam'},{title:'Kesiapan Pasokan',meta:'Lokal · Ekspor',alt:'Area gudang dan stok bahan baku'}]},
       process:{eyebrow:'Proses Kami',title:'Alur sederhana, pasokan lebih terkendali.',items:[{title:'Kebutuhan',text:'Memahami jenis produk, spesifikasi, volume, dan tujuan.'},{title:'Sourcing',text:'Menentukan sumber dan opsi produk yang paling sesuai.'},{title:'Kualitas & Kemasan',text:'Menyiapkan kualitas, sampel, serta pilihan kemasan.'},{title:'Pengiriman',text:'Mengoordinasikan dokumen dan pengiriman hingga tujuan.'}]},
       contact:{eyebrow:'Mulai Percakapan',title:'Apa kebutuhan industri Anda berikutnya?',text:'Ceritakan kebutuhan bahan baku, produk jadi, chemical, atau industrial water treatment Anda. Tim DMC Pro akan membantu menyiapkan opsi yang relevan.',call:'Hubungi Kami',visit:'Kunjungi',form:'FORM PERMINTAAN',labels:['Nama / Perusahaan','Email','Kebutuhan','Pesan'],placeholders:['Masukkan nama Anda','nama@perusahaan.com','Pilih kategori','Jenis produk, volume, dan lokasi tujuan'],categories:['Produk Garam: Bahan Baku & Produk Jadi','Chemical','Industrial Water Treatment'],submit:'Kirim Permintaan',successTitle:'Permintaan berhasil disiapkan.',successText:'Versi demo ini belum mengirim data. Saat dipasang di hosting, formulir dapat diteruskan ke email atau WhatsApp tim DMC Pro.',reset:'Kirim permintaan lain'},
@@ -3176,13 +3181,13 @@ body[data-language="zh"] .hero h1 { letter-spacing: -.045em; }
       utility: 'Domestic & Export Supply',
       nav: ['Partnership', 'About', 'Products', 'Services', 'Video', 'Gallery', 'Contact'], quote:'Request a Quote',
       menuOpen:'Open menu', menuClose:'Close menu',
-      hero:{eyebrow:'Business Partner · PT Garam (Persero)',title:'PT Garam <em>business partner.</em><br>Reliable industrial supply.',copy:'DMC Pro is a business partner of PT Garam (Persero) for the marketing and distribution of raw materials and finished products, supported by chemical and industrial water treatment lines.',explore:'Explore Products',video:'Company Video',videoSmall:'Play the DMC Pro video',chipSmall:'Partnership Status',chipStrong:'Business Partner · PT Garam (Persero)',metrics:['Industrial Salt','Chemical','Industrial Water Treatment']},
+      hero:{eyebrow:'Business Partner · PT Garam (Persero)',title:'PT Garam <em>business partner.</em><br>Reliable industrial supply.',copy:'DMC Pro is a business partner of PT Garam (Persero) for the marketing and distribution of raw materials and finished products, supported by chemical and industrial water treatment lines.',explore:'Explore Products',video:'Company Video',videoSmall:'Play the DMC Pro video',chipSmall:'Partnership Status',chipStrong:'Business Partner · PT Garam (Persero)',metrics:['Industrial Salt','Industrial Chemical Raw Materials','Industrial Water Treatment']},
       trust:['Local & export supply','Raw & finished products','Distribution support','Focused technical response'],
       partner:{statusSmall:'Partnership Status',statusStrong:'Business Partner',flow:[{title:'Raw Materials',text:'Supply for industrial processes and requirements.'},{title:'Finished Products',text:'Distribution-ready products for target markets.'}],eyebrow:'Business Partnership',title:'Business Partner',text:'PT. Dynamika Multi Compro (DMC Pro) is a business partner of PT Garam for the marketing and distribution of industrial salt, in both raw-material and finished-product forms, serving local and export markets.',points:[{tag:'50% BUSINESS FOCUS',title:'Industrial Salt',text:'The primary focus for salt-based raw materials and finished products.'},{tag:'LOCAL + EXPORT',title:'Market Reach',text:'Coordinated distribution support for domestic and export customers.'}]},
       about:{eyebrow:'About DMC Pro',title:'Connected from PT Garam to industrial demand.',text:'PT. Dynamika Multi Compro is a business partner of PT Garam (Persero), serving the marketing and distribution of raw materials and finished products while also providing chemicals and industrial water treatment solutions.',link:'Explore our services',facility:'Operational Facility',country:'INDONESIA',commitment:'Our Commitment',quote:'“Delivering our best commitment in supply quality, pricing, and shipment coordination.”',facts:['Core Businesses','Market Reach','Bag Packaging','Flexible Sizing'],localExport:'Local + Export'},
-      business:{eyebrow:'Products & Business Lines',title:'One partner for three industrial needs.',text:'DMC Pro places 50% of its portfolio in industrial salt as a PT Garam partner, supported by chemical and industrial water treatment lines at 25% each.',tabs:[{label:'Industrial Salt',share:'50% Portfolio'},{label:'Chemical',share:'25% Portfolio'},{label:'Industrial Water Treatment',share:'25% Portfolio'}],focus:'Business Focus',button:'Discuss Your Requirements',lines:{salt:{eyebrow:'Primary Focus · PT Garam Partner',title:'Raw materials and finished products for industrial demand.',description:'As a business partner of PT Garam (Persero), DMC Pro supports the marketing and distribution of industrial salt as raw materials and finished products for local and export markets.',bullets:['Industrial salt raw materials','Distribution-ready finished products','Quality and packaging options','Local and export distribution'],tags:['Raw Materials','Finished Products','Industry','Food','Feed','Export'],imageAlt:'Industrial salt raw-material and finished-product portfolio'},chemical:{eyebrow:'25% Portfolio · Chemical',title:'Chemical procurement through a coordinated supply flow.',description:'DMC Pro supports chemical raw-material procurement and trading through sourcing, import coordination, storage, and distribution.',bullets:['Chemical raw-material sourcing','Local and import procurement','Document and delivery coordination','Supply matched to industrial demand'],tags:['Industrial Raw Material','Import','Procurement','Distribution'],imageAlt:'DMC Pro chemical storage and distribution area'},water:{eyebrow:'25% Portfolio · Industrial Water Treatment',title:'Water-treatment solutions for feed, food, and general applications.',description:'DMC Pro provides industrial water treatment support for feed and food industries, general water treatment, water and chemical pumps, maintenance, and equipment repair.',bullets:['Feed-industry water treatment','Food-industry water treatment','General water treatment','Pumps, maintenance, and technical support'],tags:['Feed Industry','Food Industry','General Water Treatment','Pump & Maintenance'],imageAlt:'DMC Pro industrial water-treatment support facility'}}},
+      business:{eyebrow:'Products & Business Lines',title:'Two primary lines for industrial needs.',text:'DMC Pro’s portfolio is divided equally: 50% industrial salt and 50% industrial chemical raw materials.',tabs:[{label:'Industrial Salt',share:'50% Portfolio'},{label:'Industrial Chemical Raw Materials',share:'50% Portfolio'},{label:'Industrial Water Treatment',share:'Supporting Service'}],focus:'Business Focus',button:'Discuss Your Requirements',lines:{salt:{eyebrow:'Primary Focus · PT Garam Partner',title:'Raw materials and finished products for industrial demand.',description:'As a business partner of PT Garam (Persero), DMC Pro supports the marketing and distribution of industrial salt as raw materials and finished products for local and export markets.',bullets:['Industrial salt raw materials','Distribution-ready finished products','Quality and packaging options','Local and export distribution'],tags:['Raw Materials','Finished Products','Industry','Food','Feed','Export'],imageAlt:'Industrial salt raw-material and finished-product portfolio'},chemical:{eyebrow:'50% Portfolio · Industrial Chemical Raw Materials',title:'Chemical raw-material procurement through a coordinated supply flow.',description:'DMC Pro supports chemical raw-material procurement and trading through sourcing, import coordination, storage, and distribution.',bullets:['Chemical raw-material sourcing','Local and import procurement','Document and delivery coordination','Supply matched to industrial demand'],tags:['Industrial Raw Material','Import','Procurement','Distribution'],imageAlt:'DMC Pro chemical raw-material storage and distribution area'},water:{eyebrow:'Supporting Service · Industrial Water Treatment',title:'Water-treatment solutions for feed, food, and general applications.',description:'DMC Pro provides industrial water treatment support for feed and food industries, general water treatment, water and chemical pumps, maintenance, and equipment repair.',bullets:['Feed-industry water treatment','Food-industry water treatment','General water treatment','Pumps, maintenance, and technical support'],tags:['Feed Industry','Food Industry','General Water Treatment','Pump & Maintenance'],imageAlt:'DMC Pro industrial water-treatment support facility'}}},
       services:{eyebrow:'End-to-end Support',title:'From product partnership to operational support.',text:'We help customers structure supply requirements so they are clear, measurable, and aligned with business operations.',items:[{title:'PT Garam Product Distribution',text:'Marketing and distribution of raw materials and finished products based on customer requirements.'},{title:'Local & Export Markets',text:'Supply support for domestic demand and cross-border trade.'},{title:'Logistics Coordination',text:'Coordination of stock, packaging, documents, and delivery schedules.'},{title:'Technical Support',text:'Chemical solutions, pumps, maintenance, and industrial water treatment.'}]},
-      video:{eyebrow:'Company & Partnership Video',title:'See how DMC connects PT Garam products with industrial demand.',text:'This video module presents DMC Pro’s company profile, partnership, supply readiness, and service reach. It can be played inline or in full-screen mode.',button:'Play full screen',caption:'DMC PRO × PT GARAM (PERSERO)',strip:[{title:'PT Garam Partnership',text:'DMC Pro’s role in marketing and distributing raw materials and finished products.'},{title:'Integrated Portfolio',text:'50% industrial salt, 25% chemical, and 25% industrial water treatment.'},{title:'Local & Export Markets',text:'Coordination of requirements, stock, packaging, documents, and shipment.'}]},
+      video:{eyebrow:'Company & Partnership Video',title:'See how DMC connects PT Garam products with industrial demand.',text:'This video module presents DMC Pro’s company profile, partnership, supply readiness, and service reach. It can be played inline or in full-screen mode.',button:'Play full screen',caption:'DMC PRO × PT GARAM (PERSERO)',strip:[{title:'PT Garam Partnership',text:'DMC Pro’s role in marketing and distributing raw materials and finished products.'},{title:'Integrated Portfolio',text:'50% industrial salt and 50% industrial chemical raw materials.'},{title:'Local & Export Markets',text:'Coordination of requirements, stock, packaging, documents, and shipment.'}]},
       gallery:{eyebrow:'Operational Gallery',title:'Field readiness that builds confidence.',text:'The gallery presents product sources, stock conditions, samples, and facilities supporting DMC Pro distribution.',items:[{title:'Production Source',meta:'Salt · Indonesia',alt:'Salt-production activity at the salt fields'},{title:'Warehouse Capacity',meta:'Storage · Distribution',alt:'Warehouse with industrial salt stock'},{title:'Ready Stock',meta:'Inventory · 50 kg',alt:'Stacked salt bags in the warehouse'},{title:'Controlled Storage',meta:'Facility · Handling',alt:'DMC Pro storage-facility aisle'},{title:'Product Sample',meta:'Sampling · Quality',alt:'Salt raw-material sample'},{title:'Supply Readiness',meta:'Local · Export',alt:'Warehouse and raw-material stock area'}]},
       process:{eyebrow:'Our Process',title:'A simple flow for better-controlled supply.',items:[{title:'Requirements',text:'Understanding the product, specifications, volume, and destination.'},{title:'Sourcing',text:'Identifying the most suitable source and product options.'},{title:'Quality & Packaging',text:'Preparing quality, samples, and packaging options.'},{title:'Delivery',text:'Coordinating documents and delivery through to destination.'}]},
       contact:{eyebrow:'Start a Conversation',title:'What is your next industrial requirement?',text:'Tell us your raw-material, finished-product, chemical, or industrial water-treatment requirements. The DMC Pro team will prepare relevant options.',call:'Call Us',visit:'Visit',form:'REQUEST FORM',labels:['Name / Company','Email','Requirement','Message'],placeholders:['Enter your name','name@company.com','Select a category','Product, volume, and destination'],categories:['Salt Products: Raw & Finished','Chemical','Industrial Water Treatment'],submit:'Send Request',successTitle:'Your request has been prepared.',successText:'This demo does not submit data yet. When hosted, the form can be connected to the DMC Pro team’s email or WhatsApp.',reset:'Send another request'},
@@ -3192,13 +3197,13 @@ body[data-language="zh"] .hero h1 { letter-spacing: -.045em; }
     zh: {
       metaTitle:'DMC Pro | PT Garam（Persero）商业合作伙伴',metaDescription:'DMC Pro 是 PT Garam（Persero）的商业合作伙伴，提供原材料与成品分销、化工产品及工业水处理解决方案。',utility:'国内与出口供应',
       nav:['合作关系','关于我们','产品','服务','视频','图库','联系'],quote:'索取报价',menuOpen:'打开菜单',menuClose:'关闭菜单',
-      hero:{eyebrow:'商业合作伙伴 · PT Garam（Persero）',title:'PT Garam <em>商业合作伙伴。</em><br>可靠的工业供应。',copy:'DMC Pro 是 PT Garam（Persero）的商业合作伙伴，负责原材料与成品的营销和分销，并提供化工产品及工业水处理服务。',explore:'浏览产品',video:'企业视频',videoSmall:'播放 DMC Pro 视频',chipSmall:'合作状态',chipStrong:'商业合作伙伴 · PT Garam（Persero）',metrics:['工业盐','化工产品','工业水处理']},
+      hero:{eyebrow:'商业合作伙伴 · PT Garam（Persero）',title:'PT Garam <em>商业合作伙伴。</em><br>可靠的工业供应。',copy:'DMC Pro 是 PT Garam（Persero）的商业合作伙伴，负责原材料与成品的营销和分销，并提供化工产品及工业水处理服务。',explore:'浏览产品',video:'企业视频',videoSmall:'播放 DMC Pro 视频',chipSmall:'合作状态',chipStrong:'商业合作伙伴 · PT Garam（Persero）',metrics:['工业盐','工业化工原料','工业水处理']},
       trust:['国内与出口供应','原材料与成品','分销支持','专业技术响应'],
       partner:{statusSmall:'合作状态',statusStrong:'商业合作伙伴',flow:[{title:'原材料',text:'满足工业生产流程与需求的供应。'},{title:'成品',text:'面向目标市场的可分销产品。'}],eyebrow:'商业合作',title:'Business Partner',text:'PT. Dynamika Multi Compro（DMC Pro）是 PT Garam 的商业合作伙伴，负责工业盐原材料与成品的营销及分销，服务国内与出口市场。',points:[{tag:'50% 业务重点',title:'工业盐',text:'重点供应盐类原材料与成品。'},{tag:'国内 + 出口',title:'市场覆盖',text:'为国内及出口客户提供协调一致的分销支持。'}]},
       about:{eyebrow:'关于 DMC Pro',title:'从 PT Garam 连接至工业需求。',text:'PT. Dynamika Multi Compro 是 PT Garam（Persero）的商业合作伙伴，提供原材料与成品的营销分销，同时供应化工产品及工业水处理解决方案。',link:'了解我们的服务',facility:'运营设施',country:'印度尼西亚',commitment:'我们的承诺',quote:'“在供应质量、价格与运输协调方面始终提供最佳服务。”',facts:['核心业务','市场覆盖','袋装规格','灵活尺寸'],localExport:'国内 + 出口'},
-      business:{eyebrow:'产品与业务领域',title:'一个合作伙伴，满足三类工业需求。',text:'DMC Pro 作为 PT Garam 合作伙伴，将 50% 业务聚焦于工业盐，化工产品和工业水处理各占 25%。',tabs:[{label:'工业盐',share:'50% 业务占比'},{label:'化工产品',share:'25% 业务占比'},{label:'工业水处理',share:'25% 业务占比'}],focus:'业务重点',button:'咨询您的需求',lines:{salt:{eyebrow:'核心业务 · PT Garam 合作伙伴',title:'面向工业需求的原材料与成品。',description:'作为 PT Garam（Persero）的商业合作伙伴，DMC Pro 为国内和出口市场提供工业盐原材料与成品的营销及分销。',bullets:['工业盐原材料','可直接分销的成品','多种质量与包装选择','国内及出口分销'],tags:['原材料','成品','工业','食品','饲料','出口'],imageAlt:'工业盐原材料与成品组合'},chemical:{eyebrow:'25% 业务占比 · 化工产品',title:'协调有序的化工产品采购与供应。',description:'DMC Pro 通过采购、进口协调、仓储与分销，为工业客户提供化工原材料。',bullets:['化工原材料采购','国内与进口采购','文件及运输协调','按工业需求提供供应'],tags:['工业原材料','进口','采购','分销'],imageAlt:'DMC Pro 化工产品仓储及分销区域'},water:{eyebrow:'25% 业务占比 · 工业水处理',title:'面向饲料、食品及通用领域的水处理方案。',description:'DMC Pro 为饲料和食品行业提供工业水处理、通用水处理、水泵与化工泵，以及设备维护与维修服务。',bullets:['饲料行业水处理','食品行业水处理','通用水处理','泵、维护及技术支持'],tags:['饲料行业','食品行业','通用水处理','泵与维护'],imageAlt:'DMC Pro 工业水处理支持设施'}}},
+      business:{eyebrow:'产品与业务领域',title:'两大核心业务，满足工业需求。',text:'DMC Pro 的业务组合平均分为：工业盐 50%，工业化工原料 50%。',tabs:[{label:'工业盐',share:'50% 业务占比'},{label:'工业化工原料',share:'50% 业务占比'},{label:'工业水处理',share:'配套服务'}],focus:'业务重点',button:'咨询您的需求',lines:{salt:{eyebrow:'核心业务 · PT Garam 合作伙伴',title:'面向工业需求的原材料与成品。',description:'作为 PT Garam（Persero）的商业合作伙伴，DMC Pro 为国内和出口市场提供工业盐原材料与成品的营销及分销。',bullets:['工业盐原材料','可直接分销的成品','多种质量与包装选择','国内及出口分销'],tags:['原材料','成品','工业','食品','饲料','出口'],imageAlt:'工业盐原材料与成品组合'},chemical:{eyebrow:'50% 业务占比 · 工业化工原料',title:'协调有序的工业化工原料采购与供应。',description:'DMC Pro 通过采购、进口协调、仓储与分销，为工业客户提供化工原材料。',bullets:['化工原材料采购','国内与进口采购','文件及运输协调','按工业需求提供供应'],tags:['工业原材料','进口','采购','分销'],imageAlt:'DMC Pro 化工原料仓储及分销区域'},water:{eyebrow:'配套服务 · 工业水处理',title:'面向饲料、食品及通用领域的水处理方案。',description:'DMC Pro 为饲料和食品行业提供工业水处理、通用水处理、水泵与化工泵，以及设备维护与维修服务。',bullets:['饲料行业水处理','食品行业水处理','通用水处理','泵、维护及技术支持'],tags:['饲料行业','食品行业','通用水处理','泵与维护'],imageAlt:'DMC Pro 工业水处理支持设施'}}},
       services:{eyebrow:'全流程支持',title:'从产品合作到运营支持。',text:'我们帮助客户梳理供应需求，使其更清晰、可衡量，并与业务运营节奏保持一致。',items:[{title:'PT Garam 产品分销',text:'根据客户需求营销和分销原材料与成品。'},{title:'国内与出口市场',text:'支持国内需求及跨境贸易供应。'},{title:'物流协调',text:'协调库存、包装、文件及配送计划。'},{title:'技术支持',text:'提供化工产品、泵、维护及工业水处理解决方案。'}]},
-      video:{eyebrow:'企业与合作视频',title:'了解 DMC 如何将 PT Garam 产品连接至工业需求。',text:'该视频模块介绍 DMC Pro 的企业概况、合作关系、供应准备及服务覆盖，可直接播放或全屏观看。',button:'全屏播放',caption:'DMC PRO × PT GARAM（PERSERO）',strip:[{title:'PT Garam 合作关系',text:'DMC Pro 在原材料与成品营销分销中的作用。'},{title:'综合业务组合',text:'工业盐 50%、化工产品 25%、工业水处理 25%。'},{title:'国内与出口市场',text:'协调需求、库存、包装、文件与运输。'}]},
+      video:{eyebrow:'企业与合作视频',title:'了解 DMC 如何将 PT Garam 产品连接至工业需求。',text:'该视频模块介绍 DMC Pro 的企业概况、合作关系、供应准备及服务覆盖，可直接播放或全屏观看。',button:'全屏播放',caption:'DMC PRO × PT GARAM（PERSERO）',strip:[{title:'PT Garam 合作关系',text:'DMC Pro 在原材料与成品营销分销中的作用。'},{title:'综合业务组合',text:'工业盐 50%，工业化工原料 50%。'},{title:'国内与出口市场',text:'协调需求、库存、包装、文件与运输。'}]},
       gallery:{eyebrow:'运营图库',title:'以现场准备建立信任。',text:'图库展示产品来源、库存状况、样品以及支持 DMC Pro 分销的设施。',items:[{title:'生产来源',meta:'盐 · 印度尼西亚',alt:'盐田生产活动'},{title:'仓储能力',meta:'仓储 · 分销',alt:'存放工业盐库存的仓库'},{title:'现货库存',meta:'库存 · 50公斤',alt:'仓库内整齐堆放的盐袋'},{title:'规范仓储',meta:'设施 · 搬运',alt:'DMC Pro 仓储设施通道'},{title:'产品样品',meta:'取样 · 质量',alt:'盐类原材料样品'},{title:'供应准备',meta:'国内 · 出口',alt:'仓库及原材料库存区域'}]},
       process:{eyebrow:'我们的流程',title:'简化流程，实现更可控的供应。',items:[{title:'需求确认',text:'了解产品类型、规格、数量及目的地。'},{title:'采购寻源',text:'确定最合适的来源与产品方案。'},{title:'质量与包装',text:'准备质量标准、样品与包装选项。'},{title:'交付',text:'协调文件与运输直至目的地。'}]},
       contact:{eyebrow:'开始沟通',title:'您的下一项工业需求是什么？',text:'请告诉我们您对原材料、成品、化工产品或工业水处理的需求。DMC Pro 团队将为您准备合适的方案。',call:'致电我们',visit:'访问网站',form:'需求表单',labels:['姓名 / 公司','电子邮箱','需求类别','留言'],placeholders:['请输入您的姓名','name@company.com','选择类别','产品、数量及目的地'],categories:['盐类产品：原材料与成品','化工产品','工业水处理'],submit:'提交需求',successTitle:'您的需求已准备完成。',successText:'此演示版本尚未发送数据。正式上线后，可将表单连接至 DMC Pro 团队的电子邮箱或 WhatsApp。',reset:'提交其他需求'},
@@ -3228,7 +3233,7 @@ body[data-language="zh"] .hero h1 { letter-spacing: -.045em; }
     panel.className = 'business-panel business-' + key;
     one('#business-image').src = base.image;
     one('#business-image').alt = data.imageAlt;
-    text('#business-share', key === 'salt' ? '50%' : '25%');
+    text('#business-share', key === 'water' ? '0%' : '50%');
     text('#business-eyebrow', data.eyebrow);
     text('#business-title', data.title);
     text('#business-description', data.description);
