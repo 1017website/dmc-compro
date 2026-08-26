@@ -52,6 +52,8 @@ class CmsWebsiteTest extends TestCase
         $this->get('/cms/content')->assertOk()->assertSee('Pilih bagian website')->assertSee('Portofolio Video');
         $this->get('/cms/content/hero')->assertOk()
             ->assertSee('Bagian website:')
+            ->assertSee('Background utama Hero')
+            ->assertSee('1920 × 1080 piksel')
             ->assertSee('Terjemahan opsional')
             ->assertSee('Simpan perubahan')
             ->assertDontSee('text.0006')
@@ -140,6 +142,31 @@ class CmsWebsiteTest extends TestCase
         $this->assertCount(3, SiteSetting::query()->whereIn('setting_key', ['frontend_logo', 'cms_logo', 'favicon'])->get());
         $this->get('/')->assertOk()->assertSee('/storage/branding/', false);
         $this->get('/cms')->assertOk()->assertSee('class="brand-logo"', false);
+    }
+
+    public function test_hero_background_can_be_uploaded_from_content_cms_and_rendered(): void
+    {
+        Storage::fake('public');
+        $this->seed();
+        $this->actingAs(User::query()->where('role', 'developer')->firstOrFail());
+
+        $this->put('/cms/content', [
+            'media' => [
+                'dynamic__hero__background' => UploadedFile::fake()->image('hero-background.jpg', 1920, 1080),
+            ],
+        ])->assertSessionHasNoErrors();
+
+        $background = SiteContent::query()
+            ->where('content_key', 'dynamic.hero.background')
+            ->value('value_id');
+
+        $this->assertNotNull($background);
+        $this->assertStringStartsWith('/storage/site-media/', $background);
+        Storage::disk('public')->assertExists(str_replace('/storage/', '', $background));
+
+        $this->get('/')->assertOk()
+            ->assertSee('class="hero-media" style="background-image:', false)
+            ->assertSee($background, false);
     }
 
     public function test_seo_settings_accept_the_index_follow_option(): void

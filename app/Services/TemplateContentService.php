@@ -156,6 +156,7 @@ class TemplateContentService
         $html = implode('', $tokens);
         $html = preg_replace('/<footer\b(?![^>]*\bid=)/i', '<footer id="footer"', $html, 1) ?? $html;
         $html = str_replace('Versi demo ini belum mengirim data. Saat dipasang di hosting, formulir dapat diteruskan ke email atau WhatsApp tim DMC Pro.', 'Terima kasih. Permintaan Anda sudah tersimpan dan tim DMC Pro akan segera menindaklanjuti.', $html);
+        $html = $this->applyHeroBackground($html, $overrides);
         $html = $this->applySeo($html, $settings);
         $html = $this->applyBranding($html, $settings);
         $html = $this->wireInquiryForm($html);
@@ -471,7 +472,18 @@ HTML;
         if (isset($defaults['chemical'])) {
             $defaults['chemical']['eyebrow'] = '50% Portofolio · Bahan Baku Kimia untuk Industri';
         }
-        $fields = [];
+        $fields = [[
+            'key' => 'dynamic.hero.background',
+            'group' => 'Hero',
+            'label' => 'Background utama Hero',
+            'help' => 'Upload foto utama yang tampil memenuhi area paling atas website. Rekomendasi ukuran 1920 × 1080 piksel.',
+            'type' => 'image',
+            'default' => null,
+            'inline_media' => false,
+            'translatable' => false,
+            'aliases' => [],
+            'anchor' => '#top',
+        ]];
         foreach ($lines as $line => $lineLabel) {
             foreach ($labels as $field => $label) {
                 $default = $defaults[$line][$field] ?? '';
@@ -493,6 +505,28 @@ HTML;
             }
         }
         return $fields;
+    }
+
+    private function applyHeroBackground(string $html, $overrides): string
+    {
+        $background = trim((string) ($overrides->get('dynamic.hero.background')?->value_id ?? ''));
+        if ($background === '') {
+            return $html;
+        }
+
+        $cssUrl = str_replace(['\\', '"'], ['\\\\', '\\"'], $background);
+        $style = htmlspecialchars(
+            'background-image: linear-gradient(90deg, rgba(0, 0, 0, 0.08), transparent 45%), url("'.$cssUrl.'");',
+            ENT_QUOTES | ENT_SUBSTITUTE,
+            'UTF-8',
+        );
+
+        return preg_replace(
+            '/<div class="hero-media"/',
+            '<div class="hero-media" style="'.$style.'"',
+            $html,
+            1,
+        ) ?? $html;
     }
 
     private function groupAnchor(string $group): string

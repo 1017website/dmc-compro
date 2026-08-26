@@ -293,6 +293,8 @@ video {
 }
 
 .hero h1 em {
+  display: inline-block;
+  margin-left: 0.12em;
   color: var(--red);
   font-style: normal;
 }
@@ -2203,18 +2205,31 @@ video {
 }
 
 .hero-partner-check {
-  display: grid;
+  position: relative;
+  display: block;
   width: 34px;
   height: 34px;
   flex: 0 0 auto;
-  place-items: center;
   background: var(--red);
-  color: var(--white);
-  font-size: 15px;
-  font-weight: 800;
+  color: transparent;
+  font-size: 0;
+  line-height: 0;
 }
 
-.hero-partner-chip span { display: flex; flex-direction: column; gap: 2px; }
+.hero-partner-check::before {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 15px;
+  box-sizing: border-box;
+  border-right: 3px solid var(--white);
+  border-bottom: 3px solid var(--white);
+  content: "";
+  transform: translate(-50%, -60%) rotate(45deg);
+}
+
+.hero-partner-chip > span:not(.hero-partner-check) { display: flex; flex-direction: column; gap: 2px; }
 .hero-partner-chip small { color: rgba(255,255,255,.53); font-size: 8px; letter-spacing: .13em; text-transform: uppercase; }
 .hero-partner-chip strong { color: var(--white); font-size: 12px; font-weight: 660; letter-spacing: .03em; }
 
