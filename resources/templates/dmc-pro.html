@@ -245,7 +245,7 @@ video {
   z-index: 2;
   display: grid;
   min-height: 720px;
-  grid-template-columns: minmax(0, 1fr) 346px;
+  grid-template-columns: minmax(0, 1fr) 420px;
   align-items: end;
   gap: 80px;
   padding-top: 100px;
@@ -378,53 +378,61 @@ video {
 }
 
 .portfolio-split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-self: end;
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: rgba(17, 17, 17, 0.66);
   backdrop-filter: blur(12px);
 }
 
-.portfolio-main {
+.portfolio-main,
+.portfolio-minor > div {
   position: relative;
-  min-height: 170px;
-  padding: 28px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+  display: flex;
+  min-height: 190px;
+  flex-direction: column;
+  justify-content: center;
+  padding: 30px;
+}
+
+.portfolio-main {
+  border-right: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.portfolio-value {
+  display: flex;
+  align-items: flex-end;
 }
 
 .portfolio-main strong {
-  font-size: 82px;
+  font-size: 68px;
   font-weight: 560;
   letter-spacing: -0.08em;
-  line-height: 0.8;
+  line-height: 0.86;
 }
 
-.portfolio-main > span {
+.portfolio-value > span {
   margin-left: 5px;
   color: var(--red);
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
+  line-height: 1;
 }
 
 .portfolio-main p,
 .portfolio-minor p {
-  margin: 18px 0 0;
+  margin: 20px 0 0;
   color: rgba(255, 255, 255, 0.58);
-  font-size: 11px;
+  font-size: 10px;
+  font-weight: 650;
   letter-spacing: 0.12em;
+  line-height: 1.45;
   text-transform: uppercase;
 }
 
 .portfolio-minor {
-  display: grid;
-  grid-template-columns: 1fr;
-}
-
-.portfolio-minor > div {
-  padding: 22px 26px;
-}
-
-.portfolio-minor > div + div {
-  border-left: 0;
+  display: contents;
 }
 
 .portfolio-minor > div[hidden],
@@ -433,13 +441,14 @@ video {
 }
 
 .portfolio-minor strong {
-  font-size: 25px;
+  font-size: 52px;
   font-weight: 560;
+  letter-spacing: -0.06em;
+  line-height: 0.9;
 }
 
 .portfolio-minor p {
-  margin-top: 8px;
-  font-size: 9px;
+  margin-top: 20px;
 }
 
 .hero-index {
@@ -701,11 +710,12 @@ video {
 .business-tabs button {
   position: relative;
   display: grid;
-  min-height: 120px;
-  grid-template-columns: 44px 1fr;
+  min-height: 108px;
+  grid-template-columns: 32px minmax(0, 1fr);
   grid-template-rows: auto auto;
   align-content: center;
-  padding: 24px 28px;
+  column-gap: 14px;
+  padding: 23px 30px;
   border: 0;
   border-right: 1px solid #c9c8c5;
   border-bottom: 1px solid #c9c8c5;
@@ -747,8 +757,9 @@ video {
 }
 
 .business-tabs strong {
-  font-size: 16px;
-  font-weight: 620;
+  font-size: clamp(15px, 1.25vw, 18px);
+  font-weight: 650;
+  line-height: 1.3;
 }
 
 .business-tabs small {
@@ -765,15 +776,15 @@ video {
 
 .business-panel {
   display: grid;
-  min-height: 690px;
-  grid-template-columns: minmax(360px, 0.86fr) minmax(0, 1.14fr);
+  min-height: 640px;
+  grid-template-columns: minmax(360px, 0.84fr) minmax(0, 1.16fr);
   background: var(--white);
   animation: panel-in 360ms ease both;
 }
 
 .business-visual {
   position: relative;
-  min-height: 690px;
+  min-height: 640px;
   overflow: hidden;
   background: #d9d9d9;
 }
@@ -825,16 +836,18 @@ video {
 
 .business-content {
   align-self: center;
-  max-width: 670px;
-  padding: 70px clamp(42px, 5vw, 86px);
+  width: 100%;
+  max-width: 720px;
+  padding: 60px clamp(40px, 4.2vw, 70px);
 }
 
 .business-content h3 {
-  margin: 22px 0 22px;
-  font-size: clamp(34px, 3.2vw, 50px);
+  max-width: 590px;
+  margin: 20px 0;
+  font-size: clamp(32px, 2.65vw, 44px);
   font-weight: 570;
   letter-spacing: -0.05em;
-  line-height: 1.08;
+  line-height: 1.1;
 }
 
 .business-description {
@@ -1611,8 +1624,8 @@ video {
   }
 
   .hero-inner {
-    grid-template-columns: minmax(0, 1fr) 290px;
-    gap: 42px;
+    grid-template-columns: minmax(0, 1fr) 330px;
+    gap: 36px;
   }
 
   .split-heading,
@@ -1629,15 +1642,15 @@ video {
   }
 
   .business-panel {
-    grid-template-columns: 0.9fr 1.1fr;
+    grid-template-columns: 0.84fr 1.16fr;
   }
 
   .business-content {
-    padding: 54px 46px;
+    padding: 52px 40px;
   }
 
   .business-list {
-    grid-template-columns: 1fr;
+    gap: 0 20px;
   }
 
   .services-grid {
@@ -1752,6 +1765,7 @@ video {
   .hero-inner {
     grid-template-columns: 1fr;
     align-content: end;
+    gap: 28px;
     padding-top: 86px;
     padding-bottom: 42px;
   }
@@ -1770,7 +1784,7 @@ video {
   }
 
   .portfolio-main {
-    min-height: 142px;
+    min-height: 150px;
     border-right: 1px solid rgba(255, 255, 255, 0.16);
     border-bottom: 0;
   }
@@ -1780,16 +1794,12 @@ video {
   }
 
   .portfolio-minor {
-    grid-template-columns: 1fr;
+    display: contents;
   }
 
   .portfolio-minor > div {
-    padding: 17px 22px;
-  }
-
-  .portfolio-minor > div + div {
-    border-top: 1px solid rgba(255, 255, 255, 0.16);
-    border-left: 0;
+    min-height: 150px;
+    padding: 24px;
   }
 
   .trust-grid {
@@ -1842,10 +1852,12 @@ video {
 
   .business-panel {
     grid-template-columns: 1fr;
+    min-height: 0;
   }
 
   .business-visual {
-    min-height: 540px;
+    height: clamp(400px, 65vw, 520px);
+    min-height: 0;
   }
 
   .services-grid {
@@ -1937,17 +1949,21 @@ video {
   }
 
   .portfolio-main p {
-    display: inline;
-    margin-left: 18px;
+    display: block;
+    margin: 14px 0 0;
   }
 
   .portfolio-minor {
-    grid-template-columns: 1fr;
+    display: contents;
   }
 
-  .portfolio-minor > div + div {
-    border-top: 0;
-    border-left: 1px solid rgba(255, 255, 255, 0.16);
+  .portfolio-minor > div {
+    min-height: 112px;
+    padding: 24px 30px;
+  }
+
+  .portfolio-minor p {
+    margin-top: 14px;
   }
 
   .hero-index {
@@ -1996,11 +2012,13 @@ video {
   }
 
   .business-tabs button {
-    padding: 20px;
+    min-height: 88px;
+    padding: 18px 20px;
   }
 
   .business-visual {
-    min-height: 420px;
+    height: min(112vw, 420px);
+    min-height: 0;
   }
 
   .share-badge {
@@ -2696,7 +2714,7 @@ body[data-language="zh"] .hero h1 { letter-spacing: -.045em; }
       </div>
       <div class="portfolio-split" aria-label="Komposisi bidang usaha">
         <div class="portfolio-main">
-          <strong>50</strong><span>%</span><p>Garam Industri</p>
+          <div class="portfolio-value"><strong>50</strong><span>%</span></div><p>Garam Industri</p>
         </div>
         <div class="portfolio-minor">
           <div><strong>50%</strong><p>Bahan Baku Kimia untuk Industri</p></div>
@@ -2752,7 +2770,7 @@ body[data-language="zh"] .hero h1 { letter-spacing: -.045em; }
           <p class="panel-kicker">Our Commitment</p>
           <blockquote>“Memberikan komitmen terbaik dalam kualitas pasokan, harga, dan koordinasi pengiriman.”</blockquote>
           <div class="fact-grid">
-            <div><strong>3</strong><span>Core Business</span></div>
+            <div><strong>2</strong><span>Core Business</span></div>
             <div><strong>2</strong><span>Market Reach</span><small>Local + Export</small></div>
             <div><strong>50 kg</strong><span>Bag Packaging</span></div>
             <div><strong>Bulk</strong><span>Flexible Sizing</span></div>

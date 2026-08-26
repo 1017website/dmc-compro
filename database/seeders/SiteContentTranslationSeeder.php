@@ -239,9 +239,9 @@ class SiteContentTranslationSeeder extends Seeder
     "zh": "“在供应质量、价格与运输协调方面始终提供最佳服务。”"
   },
   "text.0062": {
-    "id": "3",
-    "en": "3",
-    "zh": "3"
+    "id": "2",
+    "en": "2",
+    "zh": "2"
   },
   "text.0063": {
     "id": "Bidang Usaha",
