@@ -42,9 +42,9 @@
 (function(){
 function formatSize(bytes){if(bytes>=1048576)return (bytes/1048576).toLocaleString('id-ID',{maximumFractionDigits:1})+' MB';return Math.ceil(bytes/1024).toLocaleString('id-ID')+' KB'}
 function clearUpload(root){var input=root.querySelector('[data-upload-input]'),name=root.querySelector('[data-upload-name]'),clear=root.querySelector('[data-upload-clear]'),error=root.querySelector('[data-upload-error]'),preview=root.querySelector('[data-upload-preview]');if(input)input.value='';if(name)name.textContent=name.dataset.emptyLabel;if(clear)clear.hidden=true;if(error){error.hidden=true;error.textContent=''}if(preview&&root._initialPreview)preview.replaceChildren(root._initialPreview.cloneNode(true));if(root._objectUrl){URL.revokeObjectURL(root._objectUrl);root._objectUrl=null}}
-document.querySelectorAll('[data-upload]').forEach(function(root){
+ function initUploads(scope){scope.querySelectorAll('[data-upload]').forEach(function(root){
  var input=root.querySelector('[data-upload-input]'),zone=root.querySelector('[data-upload-zone]'),name=root.querySelector('[data-upload-name]'),preview=root.querySelector('[data-upload-preview]'),clear=root.querySelector('[data-upload-clear]'),error=root.querySelector('[data-upload-error]'),kind=root.dataset.kind,maxBytes=Number(root.dataset.maxBytes||0);
- if(!input||!zone)return;
+  if(!input||!zone||root.dataset.cmsUploadReady)return;root.dataset.cmsUploadReady='true';
  root._initialPreview=preview.firstElementChild?preview.firstElementChild.cloneNode(true):null;
  function showFile(file){
   var expected=kind==='video'?'video/':'image/';
@@ -61,16 +61,17 @@ document.querySelectorAll('[data-upload]').forEach(function(root){
  zone.addEventListener('drop',function(e){if(e.dataTransfer.files.length){try{input.files=e.dataTransfer.files}catch(ignore){}showFile(e.dataTransfer.files[0])}});
  input.addEventListener('change',function(){var file=input.files[0];if(file)showFile(file)});
  if(clear)clear.addEventListener('click',function(){clearUpload(root);var picker=root.closest('[data-media-picker]');if(picker){var source=picker.querySelector('[data-media-source]'),status=picker.querySelector('[data-media-status]');source.value=picker._initialSource||'upload';if(status&&status._initialText)status.textContent=status._initialText}});
-});
-document.querySelectorAll('[data-media-picker]').forEach(function(picker){
- var source=picker.querySelector('[data-media-source]'),url=picker.querySelector('[data-media-url]'),status=picker.querySelector('[data-media-status]'),initialStatus=status?status.textContent:'';
+ });}
+ function initPickers(scope){scope.querySelectorAll('[data-media-picker]').forEach(function(picker){
+  if(picker.dataset.cmsPickerReady)return;picker.dataset.cmsPickerReady='true';var source=picker.querySelector('[data-media-source]'),url=picker.querySelector('[data-media-url]'),status=picker.querySelector('[data-media-status]'),initialStatus=status?status.textContent:'';
  picker._initialSource=source.value;if(status)status._initialText=initialStatus;
  function select(method){source.value=method;picker.querySelectorAll('[data-media-method]').forEach(function(button){var active=button.dataset.mediaMethod===method;button.classList.toggle('is-active',active);button.setAttribute('aria-selected',active?'true':'false')});picker.querySelectorAll('[data-media-panel]').forEach(function(panel){panel.hidden=panel.dataset.mediaPanel!==method})}
  picker.querySelectorAll('[data-media-method]').forEach(function(button){button.addEventListener('click',function(){picker.classList.remove('is-reset');select(button.dataset.mediaMethod);if(button.dataset.mediaMethod==='url'){var upload=picker.querySelector('[data-upload]');if(upload)clearUpload(upload);if(status)status.textContent=url&&url.value?'URL di bawah akan digunakan setelah disimpan.':initialStatus}})});
  if(url)url.addEventListener('input',function(){picker.classList.remove('is-reset');source.value='url';if(status)status.textContent=url.value?'URL baru siap digunakan. Klik “Simpan perubahan” untuk menerapkan.':'Tempel URL langsung file media.'});
  var reset=picker.querySelector('[data-media-reset]');if(reset)reset.addEventListener('click',function(){if(url)url.value='';var upload=picker.querySelector('[data-upload]');if(upload)clearUpload(upload);if(status)status.textContent='Media bawaan akan digunakan kembali setelah perubahan disimpan.';picker.classList.add('is-reset');select('upload');source.value='default'});
- select(source.value==='url'?'url':'upload');
-});
+  var originalSource=source.value;select(originalSource==='url'?'url':'upload');if(originalSource==='default')source.value='default';
+ });}
+ window.initCmsMediaInputs=function(scope){initUploads(scope||document);initPickers(scope||document)};window.initCmsMediaInputs(document);
 })();
 </script>
 </body></html>

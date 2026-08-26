@@ -8,7 +8,7 @@
 <div class="card page-guide"><strong>Cara mengedit:</strong> pilih bagian, ubah isi Bahasa Indonesia, lalu tekan <strong>Simpan perubahan</strong>. Terjemahan bahasa lain bersifat opsional.</div>
 <div class="page-grid">
 @foreach($groups as $groupName=>$fields)
- @php($mediaCount=$fields->whereIn('type',['image','video'])->count())
+ @php($mediaCount=$collectionCounts[$groupName] ?? $fields->whereIn('type',['image','video'])->count())
  <a class="card page-card" href="{{ route('cms.content.edit',Str::slug($groupName)) }}">
   <span class="page-number">{{ str_pad((string) $loop->iteration,2,'0',STR_PAD_LEFT) }}</span>
   <h2>{{ $groupName }}</h2><p>Ubah teks{{ $mediaCount ? ', gambar, atau video' : '' }} pada bagian {{ Str::lower($groupName) }}.</p>

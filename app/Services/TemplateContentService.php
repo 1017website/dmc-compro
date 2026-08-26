@@ -162,9 +162,55 @@ class TemplateContentService
         $html = $this->applySeo($html, $settings);
         $html = $this->applyBranding($html, $settings);
         $html = $this->wireInquiryForm($html);
-        $html = str_replace('</body>', $this->clientOverrides($overrides).$this->trackingScripts($settings).'</body>', $html);
+        $html = str_replace('</body>', $this->clientOverrides($overrides).$this->mediaCollectionsScript($settings).$this->trackingScripts($settings).'</body>', $html);
 
         return $html;
+    }
+
+    public function defaultMediaCollection(string $collection): array
+    {
+        $document = new \DOMDocument;
+        $previous = libxml_use_internal_errors(true);
+        $document->loadHTML($this->source(), LIBXML_NOERROR | LIBXML_NOWARNING);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+        $xpath = new \DOMXPath($document);
+
+        if ($collection === 'gallery') {
+            $items = [];
+            foreach ($xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " gallery-item ")]') ?: [] as $index => $node) {
+                $items[] = [
+                    'key' => 'default-'.$index,
+                    'source' => 'default',
+                    'default_index' => $index,
+                    'url' => null,
+                    'title' => $node->getAttribute('data-title') ?: 'Foto galeri '.($index + 1),
+                    'meta' => $node->getAttribute('data-meta') ?: 'Galeri DMC Pro',
+                ];
+            }
+
+            return $items;
+        }
+
+        if ($collection === 'videos') {
+            $items = [];
+            foreach ($xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " portfolio-mockup-card ")]') ?: [] as $index => $node) {
+                $text = fn (string $query) => trim((string) $xpath->evaluate('string('.$query.')', $node));
+                $items[] = [
+                    'key' => 'default-'.$index,
+                    'source' => 'default',
+                    'default_index' => $index,
+                    'url' => null,
+                    'category' => $text('.//*[contains(concat(" ", normalize-space(@class), " "), " portfolio-mockup-copy ")]//small[1]'),
+                    'title' => $text('.//h3[1]') ?: 'Video '.($index + 1),
+                    'description' => $text('.//*[contains(concat(" ", normalize-space(@class), " "), " portfolio-mockup-copy ")]//p[1]'),
+                ];
+            }
+
+            return $items;
+        }
+
+        return [];
     }
 
     private function tokens(string $html): array
@@ -558,6 +604,48 @@ HTML;
             'Footer' => '#footer',
             default => '#top',
         };
+    }
+
+    private function mediaCollectionsScript(array $settings): string
+    {
+        $collections = [];
+        foreach (['gallery', 'videos'] as $name) {
+            $key = 'media_collection_'.$name;
+            if (! array_key_exists($key, $settings)) {
+                continue;
+            }
+            $decoded = json_decode((string) $settings[$key], true);
+            $collections[$name] = is_array($decoded) ? array_values($decoded) : [];
+        }
+        if ($collections === []) {
+            return '';
+        }
+
+        $json = json_encode($collections, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP);
+
+        return <<<HTML
+<style>
+.gallery-grid.has-dynamic-items{grid-template-columns:repeat(auto-fit,minmax(260px,1fr));grid-template-rows:none;grid-auto-rows:310px}.gallery-grid.has-dynamic-items .gallery-item{grid-column:auto}.portfolio-mockup-grid.has-dynamic-items{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}.portfolio-mockup-grid.has-dynamic-items .portfolio-mockup-card:not(.is-featured){grid-column:auto}.media-collection-empty{grid-column:1/-1;padding:42px;border:1px dashed rgba(0,0,0,.2);color:#777;text-align:center}.portfolio-mockup-grid .media-collection-empty{color:rgba(255,255,255,.64);background:#171717}
+</style>
+<script>
+(function(){
+ 'use strict';
+ var collections={$json};
+ function openGallery(item){var modal=document.getElementById('lightbox'),image=document.getElementById('lightbox-image');if(!modal||!image)return;image.src=item.url;image.alt=item.title||'Foto galeri';document.getElementById('lightbox-meta').textContent=item.meta||'';document.getElementById('lightbox-title').textContent=item.title||'';modal.hidden=false;document.body.style.overflow='hidden';}
+ if(Object.prototype.hasOwnProperty.call(collections,'gallery')){
+  var galleryGrid=document.querySelector('.gallery-grid'),galleryOriginals=galleryGrid?Array.prototype.map.call(galleryGrid.querySelectorAll('.gallery-item'),function(node){return node.cloneNode(true);}):[];
+  if(galleryGrid){galleryGrid.classList.add('has-dynamic-items');var galleryNodes=collections.gallery.map(function(item,index){var node=(galleryOriginals[item.default_index]||galleryOriginals[0]);if(!node)return null;node=node.cloneNode(true);node.className='gallery-item gallery-item-'+((index%6)+1);var image=node.querySelector('img'),url=item.url||(image&&image.src)||node.dataset.src;node.dataset.src=url;node.dataset.title=item.title||'';node.dataset.meta=item.meta||'';node.dataset.alt=item.title||'Foto galeri';node.setAttribute('aria-label',item.title||'Foto galeri');if(image){image.src=url;image.alt=item.title||'Foto galeri';}var small=node.querySelector('.gallery-overlay small'),strong=node.querySelector('.gallery-overlay strong');if(small)small.textContent=item.meta||'';if(strong)strong.textContent=item.title||'';node.addEventListener('click',function(){openGallery({url:url,title:item.title,meta:item.meta});});return node;}).filter(Boolean);galleryGrid.replaceChildren.apply(galleryGrid,galleryNodes.length?galleryNodes:[Object.assign(document.createElement('div'),{className:'media-collection-empty',textContent:'Belum ada foto galeri.'})]);}
+ }
+ if(Object.prototype.hasOwnProperty.call(collections,'videos')){
+  var videoGrid=document.querySelector('.portfolio-mockup-grid'),videoOriginals=videoGrid?Array.prototype.map.call(videoGrid.querySelectorAll('.portfolio-mockup-card'),function(node){return node.cloneNode(true);}):[],modalVideo=document.getElementById('modal-video'),defaultVideo=modalVideo?(modalVideo.currentSrc||modalVideo.querySelector('source')&&modalVideo.querySelector('source').src||''):'';
+  if(videoGrid){videoGrid.classList.add('has-dynamic-items');var galleryImages=Array.prototype.map.call(document.querySelectorAll('.gallery-item img'),function(img){return img.src;});var videoNodes=collections.videos.map(function(item,index){var node=(videoOriginals[item.default_index]||videoOriginals[0]);if(!node)return null;node=node.cloneNode(true);node.classList.toggle('is-featured',index===0);node.dataset.portfolioCard=String(index);var number=node.querySelector('.portfolio-card-number'),category=node.querySelector('.portfolio-mockup-copy small'),title=node.querySelector('h3'),description=node.querySelector('.portfolio-mockup-copy p'),button=node.querySelector('.js-portfolio-play'),play=node.querySelector('.portfolio-play small'),image=node.querySelector('img');if(number)number.textContent=String(index+1).padStart(2,'0');if(category)category.textContent=item.category||'Video';if(title)title.textContent=item.title||('Video '+(index+1));if(description)description.textContent=item.description||'';if(play)play.textContent=index===0?'Putar Video':'Putar';if(image&&item.poster_url)image.src=item.poster_url;else if(image&&item.source!=='default'&&galleryImages.length)image.src=galleryImages[index%galleryImages.length];if(button){button.setAttribute('aria-label','Putar · '+(item.title||'Video'));button.addEventListener('click',function(){if(!modalVideo)return;modalVideo.pause();modalVideo.src=item.url||defaultVideo;if(image&&image.src)modalVideo.poster=image.src;var modal=document.getElementById('video-modal');modal.hidden=false;document.body.style.overflow='hidden';modalVideo.load();var result=modalVideo.play();if(result&&typeof result.catch==='function')result.catch(function(){});});}return node;}).filter(Boolean);videoGrid.replaceChildren.apply(videoGrid,videoNodes.length?videoNodes:[Object.assign(document.createElement('div'),{className:'media-collection-empty',textContent:'Belum ada video portofolio.'})]);var count=document.querySelector('.portfolio-heading-copy strong');if(count)count.textContent=collections.videos.length+' Video Portfolio · DMC Pro 2026';}
+ }
+ function restoreCollectionCopy(){if(collections.gallery)document.querySelectorAll('.gallery-item').forEach(function(node,index){var item=collections.gallery[index];if(!item)return;node.dataset.title=item.title||'';node.dataset.meta=item.meta||'';node.setAttribute('aria-label',item.title||'Foto galeri');var small=node.querySelector('.gallery-overlay small'),strong=node.querySelector('.gallery-overlay strong');if(small)small.textContent=item.meta||'';if(strong)strong.textContent=item.title||'';});if(collections.videos)document.querySelectorAll('[data-portfolio-card]').forEach(function(node,index){var item=collections.videos[index];if(!item)return;var category=node.querySelector('.portfolio-mockup-copy small'),title=node.querySelector('h3'),description=node.querySelector('.portfolio-mockup-copy p');if(category)category.textContent=item.category||'Video';if(title)title.textContent=item.title||('Video '+(index+1));if(description)description.textContent=item.description||'';});var count=document.querySelector('.portfolio-heading-copy strong');if(count&&collections.videos)count.textContent=collections.videos.length+' Video Portfolio · DMC Pro 2026';}
+ document.querySelectorAll('[data-lang]').forEach(function(button){button.addEventListener('click',function(){window.setTimeout(restoreCollectionCopy,5);});});
+ if(modalVideo)document.querySelectorAll('.js-open-video').forEach(function(button){if(button.closest('[data-portfolio-card]'))return;button.addEventListener('click',function(){modalVideo.pause();modalVideo.src=defaultVideo;modalVideo.load();},{capture:true});});
+})();
+</script>
+HTML;
     }
 
     private function trackingScripts(array $settings): string

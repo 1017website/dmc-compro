@@ -3312,7 +3312,7 @@ body[data-language="zh"] .hero h1 { letter-spacing: -.045em; }
     all('.video-partner-strip article').forEach(function (item, index) { item.querySelector('strong').textContent = c.video.strip[index].title; item.querySelector('p').textContent = c.video.strip[index].text; });
 
     decorated('.gallery-heading .eyebrow', c.gallery.eyebrow); text('.gallery-heading h2', c.gallery.title); text('.gallery-heading > .heading-copy', c.gallery.text);
-    all('.gallery-item').forEach(function (item, index) { var data = c.gallery.items[index]; item.dataset.title = data.title; item.dataset.meta = data.meta; item.dataset.alt = data.alt; item.querySelector('img').alt = data.alt; item.querySelector('.gallery-overlay small').textContent = data.meta; item.querySelector('.gallery-overlay strong').textContent = data.title; item.setAttribute('aria-label', data.title); });
+    all('.gallery-item').forEach(function (item, index) { var data = c.gallery.items[index]; if (!data) return; item.dataset.title = data.title; item.dataset.meta = data.meta; item.dataset.alt = data.alt; item.querySelector('img').alt = data.alt; item.querySelector('.gallery-overlay small').textContent = data.meta; item.querySelector('.gallery-overlay strong').textContent = data.title; item.setAttribute('aria-label', data.title); });
 
     decorated('.process-heading .eyebrow', c.process.eyebrow); text('.process-heading h2', c.process.title);
     all('.process-list li').forEach(function (item, index) { item.querySelector('h3').textContent = c.process.items[index].title; item.querySelector('p').textContent = c.process.items[index].text; });
@@ -3372,7 +3372,7 @@ body[data-language="zh"] .hero h1 { letter-spacing: -.045em; }
     document.querySelector('.portfolio-heading-copy strong').textContent=c.label;
     document.querySelector('.portfolio-summary span').textContent=c.summary;
     document.querySelector('.portfolio-summary strong').textContent=c.brand;
-    document.querySelectorAll('[data-portfolio-card]').forEach(function(card,index){var item=c.items[index];card.querySelector('.portfolio-mockup-copy small').textContent=item.category;card.querySelector('h3').textContent=item.title;card.querySelector('.portfolio-mockup-copy p').textContent=item.description;card.querySelector('.portfolio-card-meta span:first-child').textContent=item.meta;var image=card.querySelector('img');image.alt=item.alt;var button=card.querySelector('.js-portfolio-play');button.setAttribute('aria-label',c.play+' · '+item.title);card.querySelector('.portfolio-play small').textContent=index===0?c.play:c.playShort;});
+    document.querySelectorAll('[data-portfolio-card]').forEach(function(card,index){var item=c.items[index];if(!item)return;card.querySelector('.portfolio-mockup-copy small').textContent=item.category;card.querySelector('h3').textContent=item.title;card.querySelector('.portfolio-mockup-copy p').textContent=item.description;card.querySelector('.portfolio-card-meta span:first-child').textContent=item.meta;var image=card.querySelector('img');image.alt=item.alt;var button=card.querySelector('.js-portfolio-play');button.setAttribute('aria-label',c.play+' · '+item.title);card.querySelector('.portfolio-play small').textContent=index===0?c.play:c.playShort;});
   }
   var gallerySources=Array.prototype.map.call(document.querySelectorAll('.gallery-item'),function(item){return item.getAttribute('data-src');});
   document.querySelectorAll('[data-poster-index]').forEach(function(image,index){image.src=gallerySources[index]||gallerySources[0]||'';});

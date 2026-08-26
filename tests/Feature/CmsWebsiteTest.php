@@ -182,12 +182,87 @@ class CmsWebsiteTest extends TestCase
             ->assertSee('Gunakan URL')
             ->assertSee('bukan halaman YouTube/Google Drive');
 
-        $gallery = $this->get('/cms/content/galeri')->assertOk()
-            ->assertSee('Foto galeri 1')
-            ->assertSee('Foto galeri 6')
-            ->assertDontSee('Foto galeri 7');
+        $this->get('/cms/content/portofolio-video')->assertOk()
+            ->assertSee('Daftar Video Portofolio')
+            ->assertSee('+ Tambah Video')
+            ->assertSee('Jumlah item bebas');
 
-        $this->assertSame(6, substr_count($gallery->getContent(), 'data-kind="image"'));
+        $this->get('/cms/content/galeri')->assertOk()
+            ->assertSee('Daftar Foto Galeri')
+            ->assertSee('+ Tambah Foto')
+            ->assertSee('Jumlah item bebas');
+
+        $service = app(TemplateContentService::class);
+        $this->assertCount(6, $service->defaultMediaCollection('gallery'));
+        $this->assertCount(4, $service->defaultMediaCollection('videos'));
+    }
+
+    public function test_gallery_and_video_collection_counts_are_adjustable(): void
+    {
+        $this->seed();
+        $this->actingAs(User::query()->where('role', 'developer')->firstOrFail());
+
+        $this->put('/cms/content', [
+            'collection_name' => 'gallery',
+            'collection_items' => [
+                'photo-a' => ['source' => 'url', 'url' => 'https://cdn.example.com/a.jpg', 'title' => 'Foto A', 'meta' => 'Gudang'],
+                'photo-b' => ['source' => 'url', 'url' => 'https://cdn.example.com/b.jpg', 'title' => 'Foto B', 'meta' => 'Distribusi'],
+            ],
+        ])->assertSessionHasNoErrors();
+
+        $gallery = json_decode(SiteSetting::query()->where('setting_key', 'media_collection_gallery')->value('value'), true);
+        $this->assertCount(2, $gallery);
+        $this->get('/')->assertOk()->assertSee('https://cdn.example.com/a.jpg', false)->assertSee('https://cdn.example.com/b.jpg', false);
+
+        $this->put('/cms/content', [
+            'collection_name' => 'videos',
+            'collection_items' => [
+                'video-a' => ['source' => 'url', 'url' => 'https://cdn.example.com/a.mp4', 'title' => 'Video A', 'category' => 'Profil', 'description' => 'Video profil perusahaan.'],
+                'video-b' => ['source' => 'url', 'url' => 'https://cdn.example.com/b.webm', 'title' => 'Video B', 'category' => 'Operasional', 'description' => 'Video kegiatan operasional.'],
+                'video-c' => ['source' => 'url', 'url' => 'https://cdn.example.com/c.mov', 'title' => 'Video C', 'category' => 'Distribusi', 'description' => 'Video distribusi.'],
+            ],
+        ])->assertSessionHasNoErrors();
+
+        $videos = json_decode(SiteSetting::query()->where('setting_key', 'media_collection_videos')->value('value'), true);
+        $this->assertCount(3, $videos);
+        $this->get('/cms/content')->assertOk()->assertSee('3 media');
+        $this->get('/')->assertOk()->assertSee('https://cdn.example.com/c.mov', false);
+    }
+
+    public function test_new_collection_media_files_can_be_uploaded(): void
+    {
+        Storage::fake('public');
+        $this->seed();
+        $this->actingAs(User::query()->where('role', 'developer')->firstOrFail());
+
+        $this->put('/cms/content', [
+            'collection_name' => 'gallery',
+            'collection_items' => [
+                'new-photo' => ['source' => 'upload', 'title' => 'Foto Baru', 'meta' => 'Operasional'],
+            ],
+            'collection_media' => [
+                'new-photo' => UploadedFile::fake()->image('operasional.jpg', 1200, 800),
+            ],
+        ])->assertSessionHasNoErrors();
+
+        $gallery = json_decode(SiteSetting::query()->where('setting_key', 'media_collection_gallery')->value('value'), true);
+        $this->assertCount(1, $gallery);
+        $this->assertStringStartsWith('/storage/site-media/collections/gallery/', $gallery[0]['url']);
+        Storage::disk('public')->assertExists(str_replace('/storage/', '', $gallery[0]['url']));
+
+        $this->put('/cms/content', [
+            'collection_name' => 'videos',
+            'collection_items' => [
+                'new-video' => ['source' => 'upload', 'title' => 'Video Baru', 'category' => 'Profil', 'description' => 'Profil terbaru.'],
+            ],
+            'collection_media' => [
+                'new-video' => UploadedFile::fake()->create('profil.mp4', 100, 'video/mp4'),
+            ],
+        ])->assertSessionHasNoErrors();
+
+        $videos = json_decode(SiteSetting::query()->where('setting_key', 'media_collection_videos')->value('value'), true);
+        $this->assertStringStartsWith('/storage/site-media/collections/videos/', $videos[0]['url']);
+        Storage::disk('public')->assertExists(str_replace('/storage/', '', $videos[0]['url']));
     }
 
     public function test_media_can_use_a_direct_url_and_return_to_the_builtin_version(): void
