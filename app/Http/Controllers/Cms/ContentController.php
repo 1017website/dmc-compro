@@ -43,6 +43,14 @@ class ContentController extends Controller
                 continue;
             }
             $row = $submitted[$formKey] ?? [];
+            $existing = SiteContent::query()->where('content_key', $field['key'])->first();
+
+            if (in_array($field['type'], ['image', 'video'], true) && ($row['source'] ?? null) === 'default') {
+                $this->deleteManagedMedia($existing?->value_id);
+                $existing?->delete();
+                continue;
+            }
+
             $values = [];
             foreach (['id', 'en', 'zh'] as $language) {
                 $value = isset($row[$language]) ? trim((string) $row[$language]) : null;
@@ -55,17 +63,35 @@ class ContentController extends Controller
             if ($request->hasFile("media.{$formKey}")) {
                 $rules = $field['type'] === 'video'
                     ? ['file', 'mimetypes:video/mp4,video/webm,video/quicktime', 'max:204800']
-                    : ['image', 'mimes:jpg,jpeg,png,webp,gif,svg', 'max:15360'];
-                $request->validate(["media.{$formKey}" => $rules]);
-                $old = SiteContent::query()->where('content_key', $field['key'])->value('value_id');
-                if ($old && str_starts_with($old, '/storage/site-media/')) Storage::disk('public')->delete(str_replace('/storage/', '', $old));
+                    : ['file', 'mimes:jpg,jpeg,png,webp,gif,svg', 'max:15360'];
+                $request->validate(
+                    ["media.{$formKey}" => $rules],
+                    $field['type'] === 'video'
+                        ? [
+                            "media.{$formKey}.mimetypes" => 'Format video harus MP4, WebM, atau MOV.',
+                            "media.{$formKey}.max" => 'Ukuran video maksimal 200 MB.',
+                        ]
+                        : [
+                            "media.{$formKey}.mimes" => 'Format foto harus JPG, PNG, WebP, GIF, atau SVG.',
+                            "media.{$formKey}.max" => 'Ukuran foto maksimal 15 MB.',
+                        ],
+                    ["media.{$formKey}" => strtolower($field['label'])],
+                );
                 $path = $request->file("media.{$formKey}")->store('site-media', 'public');
+                $this->deleteManagedMedia($existing?->value_id);
                 $values['value_id'] = Storage::url($path);
             }
 
             if (! array_filter($values, fn ($value) => $value !== null)) {
-                SiteContent::query()->where('content_key', $field['key'])->delete();
+                $this->deleteManagedMedia($existing?->value_id);
+                $existing?->delete();
                 continue;
+            }
+
+            if (in_array($field['type'], ['image', 'video'], true)
+                && ! $request->hasFile("media.{$formKey}")
+                && $existing?->value_id !== $values['value_id']) {
+                $this->deleteManagedMedia($existing?->value_id);
             }
             SiteContent::query()->updateOrCreate(['content_key' => $field['key']], [
                 'group_name' => $field['group'], 'label' => $field['label'], 'type' => $field['type'], ...$values,
@@ -82,5 +108,12 @@ class ContentController extends Controller
         }
         $scheme = strtolower((string) parse_url($value, PHP_URL_SCHEME));
         return in_array($scheme, ['http', 'https', 'tel', 'mailto'], true);
+    }
+
+    private function deleteManagedMedia(?string $url): void
+    {
+        if ($url && str_starts_with($url, '/storage/site-media/')) {
+            Storage::disk('public')->delete(str_replace('/storage/', '', $url));
+        }
     }
 }

@@ -169,6 +169,60 @@ class CmsWebsiteTest extends TestCase
             ->assertSee($background, false);
     }
 
+    public function test_video_and_gallery_forms_make_the_media_source_choice_clear(): void
+    {
+        $this->seed();
+        $this->actingAs(User::query()->where('role', 'developer')->firstOrFail());
+
+        $this->get('/cms/content/video-utama')->assertOk()
+            ->assertSee('Cukup pilih salah satu cara')
+            ->assertSee('Sampul video')
+            ->assertSee('Video company profile')
+            ->assertSee('Upload file')
+            ->assertSee('Gunakan URL')
+            ->assertSee('bukan halaman YouTube/Google Drive');
+
+        $gallery = $this->get('/cms/content/galeri')->assertOk()
+            ->assertSee('Foto galeri 1')
+            ->assertSee('Foto galeri 6')
+            ->assertDontSee('Foto galeri 7');
+
+        $this->assertSame(6, substr_count($gallery->getContent(), 'data-kind="image"'));
+    }
+
+    public function test_media_can_use_a_direct_url_and_return_to_the_builtin_version(): void
+    {
+        Storage::fake('public');
+        $this->seed();
+        $this->actingAs(User::query()->where('role', 'developer')->firstOrFail());
+        $video = collect(app(TemplateContentService::class)->fields())
+            ->first(fn (array $field) => $field['group'] === 'Video Utama' && $field['type'] === 'video');
+        $formKey = str_replace('.', '__', $video['key']);
+
+        $this->put('/cms/content', [
+            'contents' => [$formKey => [
+                'source' => 'url',
+                'id' => 'https://cdn.example.com/company-profile.mp4',
+            ]],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('site_contents', [
+            'content_key' => $video['key'],
+            'value_id' => 'https://cdn.example.com/company-profile.mp4',
+        ]);
+
+        Storage::disk('public')->put('site-media/company-profile.mp4', 'video');
+        SiteContent::query()->where('content_key', $video['key'])
+            ->update(['value_id' => '/storage/site-media/company-profile.mp4']);
+
+        $this->put('/cms/content', [
+            'contents' => [$formKey => ['source' => 'default']],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseMissing('site_contents', ['content_key' => $video['key']]);
+        Storage::disk('public')->assertMissing('site-media/company-profile.mp4');
+    }
+
     public function test_seo_settings_accept_the_index_follow_option(): void
     {
         $this->seed();

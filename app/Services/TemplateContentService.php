@@ -50,12 +50,10 @@ class TemplateContentService
                         continue;
                     }
                     $labelCountKey = $state['group'].'|'.$type;
-                    $ordinal = ($attributeLabelCounts[$labelCountKey] ?? 0) + 1;
-                    $attributeLabelCounts[$labelCountKey] = $ordinal;
                     $field = [
                         'key' => $key,
                         'group' => $state['group'],
-                        'label' => $this->attributeLabel($attribute['name'], $attribute['value'], $type, $state['group'], $ordinal),
+                        'label' => '',
                         'help' => $this->attributeHelp($attribute['name'], $type),
                         'type' => $type,
                         'default' => str_starts_with($attribute['value'], 'data:') ? null : html_entity_decode($attribute['value'], ENT_QUOTES | ENT_HTML5, 'UTF-8'),
@@ -73,6 +71,10 @@ class TemplateContentService
                         }
                         $mediaFields[$fingerprint] = count($fields);
                     }
+
+                    $ordinal = ($attributeLabelCounts[$labelCountKey] ?? 0) + 1;
+                    $attributeLabelCounts[$labelCountKey] = $ordinal;
+                    $field['label'] = $this->attributeLabel($attribute['name'], $attribute['value'], $type, $state['group'], $ordinal);
 
                     $fields[] = $field;
                 }
@@ -314,6 +316,15 @@ class TemplateContentService
 
     private function attributeLabel(string $name, string $value, string $type, string $group, int $ordinal): string
     {
+        if ($group === 'Galeri' && $type === 'image') {
+            return 'Foto galeri '.$ordinal;
+        }
+        if ($group === 'Video Utama' && $type === 'image') {
+            return 'Sampul video';
+        }
+        if ($group === 'Video Utama' && $type === 'video') {
+            return 'Video company profile';
+        }
         if ($type === 'image') {
             return 'Gambar '.$ordinal.' di bagian '.$group;
         }
@@ -336,7 +347,8 @@ class TemplateContentService
     private function attributeHelp(string $name, string $type): string
     {
         return match (true) {
-            in_array($type, ['image', 'video'], true) => 'Ganti media ini dengan upload file atau URL baru.',
+            $type === 'video' => 'Pilih file video dari perangkat, atau gunakan URL langsung menuju file video.',
+            $type === 'image' => 'Pilih foto dari perangkat, atau gunakan URL langsung menuju file gambar.',
             $name === 'href' => 'Alamat yang dibuka ketika pengunjung mengeklik tautan.',
             $name === 'placeholder' => 'Contoh teks yang terlihat sebelum pengunjung mengisi kolom.',
             default => 'Isi yang tampil pada website.',
