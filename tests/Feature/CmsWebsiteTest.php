@@ -43,8 +43,14 @@ class CmsWebsiteTest extends TestCase
         $this->post('/cms/login', ['email' => '1017website@gmail.com', 'password' => '1017Website2020.'])
             ->assertRedirect('/cms');
         $this->get('/cms')->assertOk()->assertSee('Ringkasan website');
-        $this->get('/cms/content')->assertOk()->assertSee('Pilih halaman atau bagian')->assertSee('Portofolio Video');
-        $this->get('/cms/content/hero')->assertOk()->assertSee('Frontend → Hero')->assertSee('Simpan perubahan');
+        $this->get('/cms/content')->assertOk()->assertSee('Pilih bagian website')->assertSee('Portofolio Video');
+        $this->get('/cms/content/hero')->assertOk()
+            ->assertSee('Bagian website:')
+            ->assertSee('Terjemahan opsional')
+            ->assertSee('Simpan perubahan')
+            ->assertDontSee('text.0006')
+            ->assertDontSee('Aria Label')
+            ->assertDontSee('▶');
         $this->get('/cms/branding')->assertOk()->assertSee('Logo Frontend')->assertSee('Logo CMS')->assertSee('Favicon');
         $this->get('/cms/users')
             ->assertOk()
@@ -65,6 +71,8 @@ class CmsWebsiteTest extends TestCase
         $fields = $service->fields();
         $this->assertGreaterThan(100, count($fields));
         $this->assertContains('Hero', collect($fields)->pluck('group')->all());
+        $this->assertNotContains('SEO', collect($fields)->pluck('group')->all());
+        $this->assertFalse(collect($fields)->contains(fn (array $field) => str_contains($field['label'], 'Aria Label')));
 
         SiteContent::query()->create([
             'content_key' => 'text.0001', 'group_name' => 'SEO', 'label' => 'Title',

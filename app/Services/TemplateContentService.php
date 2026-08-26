@@ -30,7 +30,9 @@ class TemplateContentService
         $fields = [];
         $textIndex = 0;
         $attributeIndex = 0;
-        $state = ['tag' => null, 'group' => 'Umum'];
+        $state = ['tag' => null, 'group' => 'Umum', 'element' => null, 'elements' => []];
+        $mediaFields = [];
+        $attributeLabelCounts = [];
 
         foreach ($this->tokens($this->source()) as $token) {
             if (str_starts_with($token, '<')) {
@@ -40,15 +42,39 @@ class TemplateContentService
                         continue;
                     }
                     $key = sprintf('attr.%04d', ++$attributeIndex);
-                    $fields[] = [
+                    if (! $this->isVisibleAttribute($attribute['name'])) {
+                        continue;
+                    }
+                    $type = $this->attributeType($token, $attribute['name'], $attribute['value']);
+                    if ($attribute['value'] === '') {
+                        continue;
+                    }
+                    $labelCountKey = $state['group'].'|'.$type;
+                    $ordinal = ($attributeLabelCounts[$labelCountKey] ?? 0) + 1;
+                    $attributeLabelCounts[$labelCountKey] = $ordinal;
+                    $field = [
                         'key' => $key,
                         'group' => $state['group'],
-                        'label' => $this->attributeLabel($attribute['name'], $attribute['value'], $attributeIndex),
-                        'type' => $this->attributeType($token, $attribute['name'], $attribute['value']),
+                        'label' => $this->attributeLabel($attribute['name'], $attribute['value'], $type, $state['group'], $ordinal),
+                        'help' => $this->attributeHelp($attribute['name'], $type),
+                        'type' => $type,
                         'default' => str_starts_with($attribute['value'], 'data:') ? null : html_entity_decode($attribute['value'], ENT_QUOTES | ENT_HTML5, 'UTF-8'),
                         'inline_media' => str_starts_with($attribute['value'], 'data:'),
+                        'translatable' => false,
+                        'aliases' => [],
                         'anchor' => $this->groupAnchor($state['group']),
                     ];
+
+                    if (in_array($type, ['image', 'video'], true) && $attribute['value'] !== '') {
+                        $fingerprint = $state['group'].'|'.hash('sha256', $attribute['value']);
+                        if (isset($mediaFields[$fingerprint])) {
+                            $fields[$mediaFields[$fingerprint]]['aliases'][] = $key;
+                            continue;
+                        }
+                        $mediaFields[$fingerprint] = count($fields);
+                    }
+
+                    $fields[] = $field;
                 }
                 continue;
             }
@@ -58,13 +84,20 @@ class TemplateContentService
             }
 
             $plain = html_entity_decode(trim($token), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $key = sprintf('text.%04d', ++$textIndex);
+            if (! $this->isVisibleText($plain, $state, $key)) {
+                continue;
+            }
             $fields[] = [
-                'key' => sprintf('text.%04d', ++$textIndex),
+                'key' => $key,
                 'group' => $state['tag'] === 'title' ? 'SEO' : $state['group'],
-                'label' => Str::limit(preg_replace('/\s+/u', ' ', strip_tags($plain)), 72),
+                'label' => $this->textLabel($plain, $state),
+                'help' => $this->textHelp($state),
                 'type' => mb_strlen($plain) > 110 ? 'textarea' : 'text',
                 'default' => $plain,
                 'inline_media' => false,
+                'translatable' => true,
+                'aliases' => [],
                 'anchor' => $this->groupAnchor($state['tag'] === 'title' ? 'SEO' : $state['group']),
             ];
         }
@@ -77,18 +110,25 @@ class TemplateContentService
         $overrides = SiteContent::query()->get()->keyBy('content_key');
         $source = str_replace('var copy = {', 'var copy = window.__dmcCmsCopy = {', $this->source());
         $tokens = $this->tokens($source);
-        $state = ['tag' => null, 'group' => 'Umum'];
+        $state = ['tag' => null, 'group' => 'Umum', 'element' => null, 'elements' => []];
         $textIndex = 0;
         $attributeIndex = 0;
+        $attributeAliases = [];
+        foreach ($this->fields() as $field) {
+            foreach ($field['aliases'] ?? [] as $alias) {
+                $attributeAliases[$alias] = $field['key'];
+            }
+        }
 
         foreach ($tokens as &$token) {
             if (str_starts_with($token, '<')) {
                 $this->updateState($token, $state);
-                $token = preg_replace_callback('/\b([a-zA-Z_:][-a-zA-Z0-9_:.]*)\s*=\s*(["\'])(.*?)\2/s', function (array $match) use (&$attributeIndex, $token, $overrides) {
+                $token = preg_replace_callback('/\b([a-zA-Z_:][-a-zA-Z0-9_:.]*)\s*=\s*(["\'])(.*?)\2/s', function (array $match) use (&$attributeIndex, $token, $overrides, $attributeAliases) {
                     if (! $this->isEditableAttribute($token, $match[1], $match[3])) {
                         return $match[0];
                     }
                     $key = sprintf('attr.%04d', ++$attributeIndex);
+                    $key = $attributeAliases[$key] ?? $key;
                     $value = $overrides->get($key)?->value_id;
                     if ($value === null || $value === '') {
                         return $match[0];
@@ -132,12 +172,20 @@ class TemplateContentService
     private function updateState(string $token, array &$state): void
     {
         if (preg_match('/^<\s*\/\s*([a-z0-9]+)/i', $token, $closing)) {
-            if (in_array(strtolower($closing[1]), ['style', 'script', 'title'], true)) {
+            $closingTag = strtolower($closing[1]);
+            if (in_array($closingTag, ['style', 'script', 'title'], true)) {
                 $state['tag'] = null;
             }
-            if (strtolower($closing[1]) === 'section') {
+            if ($closingTag === 'section') {
                 $state['group'] = 'Umum';
             }
+            while ($state['elements'] !== []) {
+                $element = array_pop($state['elements']);
+                if ($element['tag'] === $closingTag) {
+                    break;
+                }
+            }
+            $state['element'] = $state['elements'] !== [] ? end($state['elements'])['descriptor'] : null;
             return;
         }
         if (! preg_match('/^<\s*([a-z0-9]+)/i', $token, $opening)) {
@@ -145,13 +193,34 @@ class TemplateContentService
         }
 
         $tag = strtolower($opening[1]);
+        $descriptor = '<'.$tag;
+        if (preg_match('/\bclass=["\']([^"\']+)["\']/i', $token, $class)) {
+            $descriptor .= ' class="'.$class[1].'"';
+        }
+        if (preg_match('/\baria-hidden=["\']true["\']/i', $token)) {
+            $descriptor .= ' aria-hidden="true"';
+        }
+        if (preg_match('/\bdata-lang=["\'][^"\']+["\']/i', $token)) {
+            $descriptor .= ' data-lang="set"';
+        }
+        $descriptor .= '>';
+        if (! in_array($tag, ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'], true)) {
+            $state['elements'][] = ['tag' => $tag, 'descriptor' => $descriptor];
+        }
+        $state['element'] = $state['elements'] !== [] ? end($state['elements'])['descriptor'] : $descriptor;
         if (in_array($tag, ['style', 'script', 'title'], true)) {
             $state['tag'] = $tag;
         }
-        if ($tag === 'header') {
+        if (str_contains($token, 'utility-bar')) {
+            $state['group'] = 'Header & Navigasi';
+        } elseif ($tag === 'header') {
             $state['group'] = 'Header & Navigasi';
         } elseif ($tag === 'footer') {
             $state['group'] = 'Footer';
+        } elseif (preg_match('/\bid=["\']video-modal["\']/i', $token)) {
+            $state['group'] = 'Video Utama';
+        } elseif (preg_match('/\bid=["\']lightbox["\']/i', $token)) {
+            $state['group'] = 'Galeri';
         } elseif ($tag === 'section') {
             if (preg_match('/\bid=["\']([^"\']+)["\']/i', $token, $id)) {
                 $state['group'] = self::GROUPS[$id[1]] ?? Str::headline($id[1]);
@@ -187,9 +256,47 @@ class TemplateContentService
             && ! ($name === 'href' && str_starts_with($value, '#'));
     }
 
+    private function isVisibleAttribute(string $name): bool
+    {
+        return ! in_array(strtolower($name), ['content', 'aria-label', 'data-alt', 'data-meta', 'data-title', 'alt'], true);
+    }
+
+    private function isVisibleText(string $plain, array $state, string $key): bool
+    {
+        $element = strtolower((string) ($state['element'] ?? ''));
+
+        if (in_array($key, [
+            'text.0083', 'text.0084', 'text.0085', 'text.0086', 'text.0087',
+            'text.0089', 'text.0091', 'text.0093', 'text.0095', 'text.0096',
+            'text.0097', 'text.0098', 'text.0099', 'text.0100', 'text.0101',
+            'text.0251', 'text.0252',
+        ], true)) {
+            return false;
+        }
+
+        if (($state['tag'] ?? null) === 'title'
+            || str_contains($element, 'aria-hidden="true"')
+            || str_contains($element, "aria-hidden='true'")
+            || str_contains($element, 'data-lang=')) {
+            return false;
+        }
+
+        if (preg_match('/^[↗↓▶✓+×→%]+$/u', $plain)
+            || preg_match('/^0[1-4]$/', $plain)
+            || preg_match('/^\d{2}:\d{2}$/', $plain)
+            || preg_match('/^\d{2}\s*\/\s*\d{2}$/', $plain)
+            || preg_match('/^DMC\s*\/\s*\d+$/i', $plain)) {
+            return false;
+        }
+
+        return ! in_array($plain, [
+            'with', 'Browser Anda belum mendukung video HTML5.', 'DMC', 'PRO',
+        ], true);
+    }
+
     private function attributeType(string $tag, string $name, string $value): string
     {
-        if ($name === 'poster' || str_starts_with($value, 'data:image') || (in_array($name, ['src', 'data-src'], true) && str_contains(strtolower($tag), 'img'))) {
+        if ($name === 'poster' || str_starts_with($value, 'data:image') || (in_array($name, ['src', 'data-src'], true) && preg_match('/^<\s*img\b/i', $tag))) {
             return 'image';
         }
         if (str_starts_with($value, 'data:video') || (in_array($name, ['src', 'poster'], true) && preg_match('/<(video|source)\b/i', $tag))) {
@@ -202,15 +309,73 @@ class TemplateContentService
         return 'text';
     }
 
-    private function attributeLabel(string $name, string $value, int $index): string
+    private function attributeLabel(string $name, string $value, string $type, string $group, int $ordinal): string
     {
-        if (str_starts_with($value, 'data:image')) {
-            return "Gambar bawaan {$index}";
+        if ($type === 'image') {
+            return 'Gambar '.$ordinal.' di bagian '.$group;
         }
-        if (str_starts_with($value, 'data:video')) {
-            return "Video bawaan {$index}";
+        if ($type === 'video') {
+            return 'Video '.$ordinal.' di bagian '.$group;
         }
-        return Str::headline($name).' · '.Str::limit(html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8'), 55);
+        if ($name === 'href' && str_starts_with($value, 'tel:')) {
+            return 'Nomor telepon yang dituju';
+        }
+        if ($name === 'href') {
+            return 'Alamat tautan — '.Str::limit($value, 48);
+        }
+        if ($name === 'placeholder') {
+            return 'Contoh isian — '.Str::limit(html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8'), 48);
+        }
+
+        return 'Alamat media atau tautan';
+    }
+
+    private function attributeHelp(string $name, string $type): string
+    {
+        return match (true) {
+            in_array($type, ['image', 'video'], true) => 'Ganti media ini dengan upload file atau URL baru.',
+            $name === 'href' => 'Alamat yang dibuka ketika pengunjung mengeklik tautan.',
+            $name === 'placeholder' => 'Contoh teks yang terlihat sebelum pengunjung mengisi kolom.',
+            default => 'Isi yang tampil pada website.',
+        };
+    }
+
+    private function textLabel(string $plain, array $state): string
+    {
+        $element = strtolower((string) ($state['element'] ?? ''));
+        $tag = preg_match('/^<\s*([a-z0-9]+)/i', $element, $match) ? strtolower($match[1]) : '';
+        $prefix = match (true) {
+            str_contains($element, 'eyebrow'), str_contains($element, 'panel-kicker') => 'Label kecil',
+            $tag === 'h1' => 'Judul utama',
+            $tag === 'h2' => 'Judul bagian',
+            in_array($tag, ['h3', 'h4'], true) => 'Judul item',
+            $tag === 'em' => 'Judul utama (teks yang disorot)',
+            $tag === 'blockquote' => 'Kutipan komitmen',
+            $tag === 'p' => 'Deskripsi',
+            $tag === 'a' => 'Teks tautan',
+            $tag === 'button' => 'Teks tombol',
+            $tag === 'option' => 'Pilihan formulir',
+            $tag === 'label' => 'Nama kolom formulir',
+            $tag === 'small' => 'Keterangan singkat',
+            $tag === 'strong' => 'Teks utama',
+            default => 'Teks',
+        };
+        $preview = Str::limit(preg_replace('/\s+/u', ' ', strip_tags($plain)), 56);
+
+        return $prefix.' — '.$preview;
+    }
+
+    private function textHelp(array $state): string
+    {
+        $element = strtolower((string) ($state['element'] ?? ''));
+
+        return match (true) {
+            str_contains($element, 'eyebrow'), str_contains($element, 'panel-kicker') => 'Teks kecil yang tampil di atas judul.',
+            preg_match('/^<\s*h[1-4]\b/i', $element) === 1 => 'Judul yang menonjol pada bagian ini.',
+            preg_match('/^<\s*(a|button)\b/i', $element) === 1 => 'Teks yang terlihat pada tombol atau tautan.',
+            preg_match('/^<\s*p\b/i', $element) === 1 => 'Kalimat penjelas yang dibaca pengunjung.',
+            default => 'Ubah teks yang terlihat pada website.',
+        };
     }
 
     private function applySeo(string $html, array $settings): string
@@ -294,19 +459,30 @@ HTML;
     {
         $labels = [
             'eyebrow' => 'Label kecil', 'title' => 'Judul', 'description' => 'Deskripsi',
-            'imageAlt' => 'Alt gambar', 'bullets' => 'Daftar poin (satu per baris)', 'tags' => 'Tag (pisahkan dengan koma)',
+            'imageAlt' => 'Deskripsi gambar untuk Google', 'bullets' => 'Daftar poin (satu per baris)', 'tags' => 'Kategori (pisahkan dengan koma)',
         ];
         $lines = ['salt' => 'Garam Industri', 'chemical' => 'Chemical Supply', 'water' => 'Water Treatment'];
+        $defaults = [];
+        if (preg_match('/window\.__dmcBaseBusinessLines\s*=\s*(\{.*?\});\s*var businessLines/s', $this->source(), $match)) {
+            $defaults = json_decode($match[1], true) ?: [];
+        }
         $fields = [];
         foreach ($lines as $line => $lineLabel) {
             foreach ($labels as $field => $label) {
+                $default = $defaults[$line][$field] ?? '';
+                if (is_array($default)) {
+                    $default = implode($field === 'tags' ? ', ' : "\n", $default);
+                }
                 $fields[] = [
                     'key' => "dynamic.business.{$line}.{$field}",
-                    'group' => 'Produk Dinamis',
+                    'group' => 'Detail Produk',
                     'label' => "{$lineLabel} · {$label}",
+                    'help' => 'Konten detail untuk lini produk '.$lineLabel.'.',
                     'type' => in_array($field, ['description', 'bullets', 'tags'], true) ? 'textarea' : 'text',
-                    'default' => '',
+                    'default' => $default,
                     'inline_media' => false,
+                    'translatable' => true,
+                    'aliases' => [],
                     'anchor' => '#produk',
                 ];
             }
@@ -321,7 +497,7 @@ HTML;
             'Keunggulan' => '#partner',
             'Kemitraan' => '#partner',
             'Tentang' => '#tentang',
-            'Produk', 'Produk Dinamis' => '#produk',
+            'Produk', 'Detail Produk' => '#produk',
             'Layanan' => '#layanan',
             'Video Utama' => '#video',
             'Portofolio Video' => '#video-portfolio',

@@ -3063,10 +3063,13 @@ body[data-language="zh"] .hero h1 { letter-spacing: -.045em; }
 
   document.querySelectorAll('.gallery-item').forEach(function (item) {
     item.addEventListener('click', function () {
-      document.getElementById('lightbox-image').src = item.dataset.src;
-      document.getElementById('lightbox-image').alt = item.dataset.alt;
-      document.getElementById('lightbox-meta').textContent = item.dataset.meta;
-      document.getElementById('lightbox-title').textContent = item.dataset.title;
+      var thumbnail = item.querySelector('img');
+      var meta = item.querySelector('.gallery-overlay small');
+      var title = item.querySelector('.gallery-overlay strong');
+      document.getElementById('lightbox-image').src = thumbnail ? thumbnail.src : item.dataset.src;
+      document.getElementById('lightbox-image').alt = thumbnail ? thumbnail.alt : item.dataset.alt;
+      document.getElementById('lightbox-meta').textContent = meta ? meta.textContent : item.dataset.meta;
+      document.getElementById('lightbox-title').textContent = title ? title.textContent : item.dataset.title;
       setModalState(lightbox, true);
     });
   });
