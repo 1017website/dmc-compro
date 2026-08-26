@@ -154,9 +154,9 @@ class SiteContentTranslationSeeder extends Seeder
     "zh": "工业盐"
   },
   "text.0036": {
-    "id": "50%",
-    "en": "50%",
-    "zh": "50%"
+    "id": "50",
+    "en": "50",
+    "zh": "50"
   },
   "text.0037": {
     "id": "Bahan Baku Kimia untuk Industri",

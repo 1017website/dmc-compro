@@ -104,6 +104,12 @@ class CmsWebsiteTest extends TestCase
             'value_zh' => '工业化工原料',
         ]);
         $this->assertDatabaseHas('site_contents', [
+            'content_key' => 'text.0036',
+            'value_id' => '50',
+            'value_en' => '50',
+            'value_zh' => '50',
+        ]);
+        $this->assertDatabaseHas('site_contents', [
             'content_key' => 'dynamic.business.chemical.eyebrow',
             'value_id' => '50% Portofolio · Bahan Baku Kimia untuk Industri',
             'value_en' => '50% Portfolio · Industrial Chemical Raw Materials',

@@ -405,19 +405,23 @@ video {
   align-items: flex-end;
 }
 
-.portfolio-main strong {
-  font-size: 68px;
+.portfolio-value strong {
+  font-size: 58px;
   font-weight: 560;
   letter-spacing: -0.08em;
   line-height: 0.86;
 }
 
-.portfolio-value > span {
+.portfolio-percent {
   margin-left: 5px;
   color: var(--red);
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   line-height: 1;
+}
+
+.portfolio-percent:empty::before {
+  content: "%";
 }
 
 .portfolio-main p,
@@ -438,13 +442,6 @@ video {
 .portfolio-minor > div[hidden],
 .business-tabs button[hidden] {
   display: none !important;
-}
-
-.portfolio-minor strong {
-  font-size: 52px;
-  font-weight: 560;
-  letter-spacing: -0.06em;
-  line-height: 0.9;
 }
 
 .portfolio-minor p {
@@ -701,7 +698,7 @@ video {
 
 .business-tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(360px, 0.84fr) minmax(0, 1.16fr);
   margin-top: 70px;
   border-top: 1px solid #c9c8c5;
   border-left: 1px solid #c9c8c5;
@@ -1789,7 +1786,7 @@ video {
     border-bottom: 0;
   }
 
-  .portfolio-main strong {
+  .portfolio-value strong {
     font-size: 64px;
   }
 
@@ -1944,7 +1941,7 @@ video {
     border-bottom: 1px solid rgba(255, 255, 255, 0.16);
   }
 
-  .portfolio-main strong {
+  .portfolio-value strong {
     font-size: 55px;
   }
 
@@ -2714,10 +2711,10 @@ body[data-language="zh"] .hero h1 { letter-spacing: -.045em; }
       </div>
       <div class="portfolio-split" aria-label="Komposisi bidang usaha">
         <div class="portfolio-main">
-          <div class="portfolio-value"><strong>50</strong><span>%</span></div><p>Garam Industri</p>
+          <div class="portfolio-value"><strong>50</strong><span class="portfolio-percent">%</span></div><p>Garam Industri</p>
         </div>
         <div class="portfolio-minor">
-          <div><strong>50%</strong><p>Bahan Baku Kimia untuk Industri</p></div>
+          <div><div class="portfolio-value"><strong>50</strong><span class="portfolio-percent" aria-hidden="true"></span></div><p>Bahan Baku Kimia untuk Industri</p></div>
           <div hidden aria-hidden="true"><strong>0%</strong><p>Industrial Water Treatment</p></div>
         </div>
       </div>
