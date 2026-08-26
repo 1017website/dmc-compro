@@ -7,6 +7,7 @@ use App\Models\SiteSetting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class SettingsController extends Controller
@@ -22,7 +23,12 @@ class SettingsController extends Controller
             'seo_title' => ['nullable', 'string', 'max:70'],
             'seo_description' => ['nullable', 'string', 'max:180'],
             'seo_keywords' => ['nullable', 'string', 'max:500'],
-            'seo_robots' => ['nullable', 'in:index, follow,noindex, nofollow,index, nofollow,noindex, follow'],
+            'seo_robots' => ['nullable', Rule::in([
+                'index, follow',
+                'noindex, nofollow',
+                'index, nofollow',
+                'noindex, follow',
+            ])],
             'canonical_url' => ['nullable', 'url:http,https', 'max:255'],
             'og_title' => ['nullable', 'string', 'max:100'],
             'og_description' => ['nullable', 'string', 'max:220'],

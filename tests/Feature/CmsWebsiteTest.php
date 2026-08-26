@@ -90,6 +90,25 @@ class CmsWebsiteTest extends TestCase
         $this->get('/cms')->assertOk()->assertSee('class="brand-logo"', false);
     }
 
+    public function test_seo_settings_accept_the_index_follow_option(): void
+    {
+        $this->seed();
+        $this->actingAs(User::query()->where('role', 'developer')->firstOrFail());
+
+        $this->put('/cms/settings', [
+            'seo_title' => 'DMC Pro | Mitra PT Garam, Chemical & Water Treatment',
+            'seo_description' => 'DMC Pro menyediakan garam industri, chemical supply, dan industrial water treatment sebagai mitra bisnis PT Garam (Persero) untuk pasar lokal dan ekspor.',
+            'seo_keywords' => 'garam industri, chemical supply, industrial water treatment',
+            'seo_robots' => 'index, follow',
+            'canonical_url' => 'https://dmcpro.co.id/',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('site_settings', [
+            'setting_key' => 'seo_robots',
+            'value' => 'index, follow',
+        ]);
+    }
+
     public function test_user_creation_has_localized_validation_and_accepts_a_valid_password(): void
     {
         $this->seed();
