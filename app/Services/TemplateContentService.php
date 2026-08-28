@@ -146,6 +146,9 @@ class TemplateContentService
             }
 
             $key = sprintf('text.%04d', ++$textIndex);
+            if (str_contains((string) ($state['element'] ?? ''), 'modal-close')) {
+                continue;
+            }
             $value = $overrides->get($key)?->value_id;
             if ($value !== null && $value !== '') {
                 preg_match('/^\s*/u', $token, $leading);

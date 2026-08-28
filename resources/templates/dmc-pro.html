@@ -2523,13 +2523,14 @@ body[data-language="zh"] .hero h1 { letter-spacing: -.045em; }
 
 .portfolio-mockup-grid {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 14px;
   margin-top: 54px;
 }
 .portfolio-mockup-card {
   position: relative;
   display: flex;
+  grid-column: span 4;
   min-width: 0;
   flex-direction: column;
   overflow: hidden;
@@ -2537,6 +2538,11 @@ body[data-language="zh"] .hero h1 { letter-spacing: -.045em; }
   color: var(--white);
 }
 .portfolio-mockup-card.is-featured {
+  display: grid;
+  width: min(100%, 860px);
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1.45fr) minmax(260px, .55fr);
+  justify-self: center;
   box-shadow: inset 0 4px 0 var(--red);
 }
 .portfolio-thumbnail {
@@ -2549,7 +2555,7 @@ body[data-language="zh"] .hero h1 { letter-spacing: -.045em; }
   background: #111;
   cursor: pointer;
 }
-.is-featured .portfolio-thumbnail { min-height: 0; aspect-ratio: 16 / 9; }
+.is-featured .portfolio-thumbnail { min-height: 300px; aspect-ratio: auto; }
 .portfolio-thumbnail img {
   width: 100%;
   height: 100%;
@@ -2607,7 +2613,7 @@ body[data-language="zh"] .hero h1 { letter-spacing: -.045em; }
   justify-content: space-between;
   padding: 22px;
 }
-.is-featured .portfolio-mockup-copy { min-height: 168px; padding: 22px; }
+.is-featured .portfolio-mockup-copy { min-height: 300px; padding: 28px; }
 .portfolio-mockup-copy small {
   color: var(--red);
   font-size: 8px;
@@ -2622,7 +2628,7 @@ body[data-language="zh"] .hero h1 { letter-spacing: -.045em; }
   letter-spacing: -.04em;
   line-height: 1.15;
 }
-.is-featured .portfolio-mockup-copy h3 { font-size: 24px; }
+.is-featured .portfolio-mockup-copy h3 { font-size: 28px; }
 .portfolio-mockup-copy p {
   margin: 0;
   color: rgba(255,255,255,.48);
@@ -2659,11 +2665,17 @@ body[data-language="zh"] .hero h1 { letter-spacing: -.045em; }
 
 @media (max-width: 960px) {
   .portfolio-heading { grid-template-columns: 1fr; gap: 34px; }
-  .portfolio-mockup-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .portfolio-mockup-card, .portfolio-mockup-card.is-featured { grid-column: auto; }
-  .is-featured .portfolio-thumbnail { min-height: 0; aspect-ratio: 16 / 9; }
-  .portfolio-mockup-copy, .is-featured .portfolio-mockup-copy { min-height: 180px; padding: 24px; }
-  .portfolio-mockup-copy h3, .is-featured .portfolio-mockup-copy h3 { font-size: 22px; }
+  .portfolio-mockup-card { grid-column: span 6; }
+  .portfolio-mockup-card.is-featured {
+    width: min(100%, 760px);
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1.25fr) minmax(240px, .75fr);
+  }
+  .is-featured .portfolio-thumbnail { min-height: 280px; aspect-ratio: auto; }
+  .portfolio-mockup-copy { min-height: 180px; padding: 24px; }
+  .is-featured .portfolio-mockup-copy { min-height: 280px; padding: 24px; }
+  .portfolio-mockup-copy h3 { font-size: 22px; }
+  .is-featured .portfolio-mockup-copy h3 { font-size: 25px; }
 }
 
 @media (max-width: 580px) {
@@ -2673,6 +2685,8 @@ body[data-language="zh"] .hero h1 { letter-spacing: -.045em; }
   .portfolio-heading h2 { font-size: 40px; }
   .portfolio-mockup-grid { grid-template-columns: 1fr; margin-top: 44px; }
   .portfolio-mockup-card, .portfolio-mockup-card.is-featured { grid-column: auto; }
+  .portfolio-mockup-card.is-featured { display: flex; width: 100%; }
+  .is-featured .portfolio-thumbnail { min-height: 0; aspect-ratio: 16 / 9; }
   .portfolio-mockup-copy, .is-featured .portfolio-mockup-copy { min-height: 180px; padding: 22px; }
   .portfolio-mockup-copy h3, .is-featured .portfolio-mockup-copy h3 { font-size: 22px; }
   .portfolio-summary { align-items: flex-start; flex-direction: column; justify-content: center; gap: 6px; }

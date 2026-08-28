@@ -161,12 +161,44 @@ class CmsWebsiteTest extends TestCase
         $response = $this->get('/');
 
         $response->assertOk()
-            ->assertSee('grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr))', false)
+            ->assertSee('width: min(100%, 860px)', false)
             ->assertSee('.portfolio-mockup-card.is-featured {', false)
+            ->assertSee('grid-column: 1 / -1', false)
+            ->assertSee('grid-template-columns: minmax(0, 1.45fr) minmax(260px, .55fr)', false)
             ->assertSee('box-shadow: inset 0 4px 0 var(--red)', false)
-            ->assertSee('.is-featured .portfolio-thumbnail { min-height: 0; aspect-ratio: 16 / 9; }', false)
-            ->assertSee('.is-featured .portfolio-mockup-copy { min-height: 168px; padding: 22px; }', false)
+            ->assertSee('.is-featured .portfolio-thumbnail { min-height: 300px; aspect-ratio: auto; }', false)
+            ->assertSee('.is-featured .portfolio-mockup-copy { min-height: 300px; padding: 28px; }', false)
             ->assertSee('filter: brightness(0) invert(1)', false);
+    }
+
+    public function test_hidden_system_copy_cannot_replace_gallery_or_video_close_icons(): void
+    {
+        SiteContent::query()->insert([
+            [
+                'content_key' => 'text.0251',
+                'group_name' => 'Umum',
+                'label' => 'Stale gallery content',
+                'type' => 'text',
+                'value_id' => 'Kontak',
+                'value_en' => 'Contact',
+                'value_zh' => '联系',
+            ],
+            [
+                'content_key' => 'text.0252',
+                'group_name' => 'Umum',
+                'label' => 'Stale video content',
+                'type' => 'text',
+                'value_id' => '© 2026 PT. Dynamika Multi Compro',
+                'value_en' => '© 2026 PT. Dynamika Multi Compro',
+                'value_zh' => '© 2026 PT. Dynamika Multi Compro',
+            ],
+        ]);
+
+        $this->get('/')->assertOk()
+            ->assertSee('<button class="modal-close js-close-modal" type="button" aria-label="Tutup galeri">×</button>', false)
+            ->assertDontSee('<button class="modal-close js-close-modal" type="button" aria-label="Tutup galeri">Kontak</button>', false)
+            ->assertSee('<button class="modal-close js-close-modal" type="button" aria-label="Tutup video">×</button>', false)
+            ->assertDontSee('<button class="modal-close js-close-modal" type="button" aria-label="Tutup video">© 2026 PT. Dynamika Multi Compro</button>', false);
     }
 
     public function test_hero_background_can_be_uploaded_from_content_cms_and_rendered(): void
