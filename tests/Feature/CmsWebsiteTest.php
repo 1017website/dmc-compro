@@ -140,8 +140,20 @@ class CmsWebsiteTest extends TestCase
         ])->assertSessionHasNoErrors();
 
         $this->assertCount(3, SiteSetting::query()->whereIn('setting_key', ['frontend_logo', 'cms_logo', 'favicon'])->get());
-        $this->get('/')->assertOk()->assertSee('/storage/branding/', false);
+        $this->get('/')->assertOk()
+            ->assertSee('/storage/branding/', false)
+            ->assertSee('class="footer-brand"><img src="/storage/branding/', false);
         $this->get('/cms')->assertOk()->assertSee('class="brand-logo"', false);
+    }
+
+    public function test_video_heading_is_constrained_to_avoid_overlapping_the_video(): void
+    {
+        $response = $this->get('/');
+
+        $response->assertOk()
+            ->assertSee('.video-copy {', false)
+            ->assertSee('overflow-wrap: anywhere', false)
+            ->assertSee('font-size: clamp(34px, 2.9vw, 48px)', false);
     }
 
     public function test_hero_background_can_be_uploaded_from_content_cms_and_rendered(): void

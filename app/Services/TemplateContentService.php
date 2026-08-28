@@ -469,9 +469,21 @@ class TemplateContentService
     private function applyBranding(string $html, array $settings): string
     {
         $escape = fn (string $value) => htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $footerLogo = null;
         if ($logo = ($settings['frontend_logo'] ?? null)) {
             $safe = $escape($logo);
             $html = preg_replace('/<img\s+src=(["\']).*?\1\s+alt=(["\'])DMC Pro\2>/s', '<img src="'.$safe.'" alt="DMC Pro">', $html, 1) ?? $html;
+            $footerLogo = $safe;
+        } elseif (preg_match('/<a\s+class=(["\'])brand\1[^>]*>\s*<img\s+src=(["\'])(.*?)\2\s+alt=(["\'])DMC Pro\4>/s', $html, $match)) {
+            $footerLogo = $match[3];
+        }
+        if ($footerLogo !== null) {
+            $html = preg_replace_callback(
+                '/<div\s+class=(["\'])footer-brand\1>.*?<\/div>/s',
+                fn () => '<div class="footer-brand"><img src="'.$footerLogo.'" alt="DMC Pro"></div>',
+                $html,
+                1,
+            ) ?? $html;
         }
         if ($favicon = ($settings['favicon'] ?? null)) {
             $safe = $escape($favicon);
