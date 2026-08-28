@@ -265,6 +265,46 @@ class CmsWebsiteTest extends TestCase
         Storage::disk('public')->assertExists(str_replace('/storage/', '', $videos[0]['url']));
     }
 
+    public function test_collections_recover_a_missing_media_source_and_render_video_previews(): void
+    {
+        Storage::fake('public');
+        $this->seed();
+        $this->actingAs(User::query()->where('role', 'developer')->firstOrFail());
+
+        Storage::disk('public')->put('site-media/collections/gallery/existing.jpg', 'image');
+        $this->put('/cms/content', [
+            'collection_name' => 'gallery',
+            'collection_items' => [
+                'default-photo' => ['source' => '', 'default_index' => 0, 'url' => '', 'title' => 'Foto Bawaan', 'meta' => 'Produksi'],
+                'existing-photo' => ['source' => '', 'default_index' => '', 'url' => '/storage/site-media/collections/gallery/existing.jpg', 'title' => 'Foto Upload', 'meta' => 'Gudang'],
+            ],
+        ])->assertSessionHasNoErrors();
+
+        $gallery = json_decode(SiteSetting::query()->where('setting_key', 'media_collection_gallery')->value('value'), true);
+        $this->assertSame('default', $gallery[0]['source']);
+        $this->assertSame('upload', $gallery[1]['source']);
+
+        Storage::disk('public')->put('site-media/collections/videos/existing.mp4', 'video');
+        $this->put('/cms/content', [
+            'collection_name' => 'videos',
+            'collection_items' => [
+                'existing-video' => [
+                    'source' => '', 'default_index' => '',
+                    'url' => '/storage/site-media/collections/videos/existing.mp4',
+                    'title' => 'Video Upload', 'category' => 'Profil', 'description' => 'Video terbaru.',
+                ],
+            ],
+        ])->assertSessionHasNoErrors();
+
+        $videos = json_decode(SiteSetting::query()->where('setting_key', 'media_collection_videos')->value('value'), true);
+        $this->assertSame('upload', $videos[0]['source']);
+
+        $this->get('/')->assertOk()
+            ->assertSee("document.createElement('video')", false)
+            ->assertSee("preview.src=item.url", false)
+            ->assertSee('window.setTimeout(restoreCollectionCopy,60)', false);
+    }
+
     public function test_media_can_use_a_direct_url_and_return_to_the_builtin_version(): void
     {
         Storage::fake('public');

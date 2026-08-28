@@ -63,13 +63,14 @@ function clearUpload(root){var input=root.querySelector('[data-upload-input]'),n
  if(clear)clear.addEventListener('click',function(){clearUpload(root);var picker=root.closest('[data-media-picker]');if(picker){var source=picker.querySelector('[data-media-source]'),status=picker.querySelector('[data-media-status]');source.value=picker._initialSource||'upload';if(status&&status._initialText)status.textContent=status._initialText}});
  });}
  function initPickers(scope){scope.querySelectorAll('[data-media-picker]').forEach(function(picker){
-  if(picker.dataset.cmsPickerReady)return;picker.dataset.cmsPickerReady='true';var source=picker.querySelector('[data-media-source]'),url=picker.querySelector('[data-media-url]'),status=picker.querySelector('[data-media-status]'),initialStatus=status?status.textContent:'';
- picker._initialSource=source.value;if(status)status._initialText=initialStatus;
+  if(picker.dataset.cmsPickerReady)return;picker.dataset.cmsPickerReady='true';var source=picker.querySelector('[data-media-source]'),url=picker.querySelector('[data-media-url]'),status=picker.querySelector('[data-media-status]'),initialStatus=status?status.textContent:'',item=picker.closest('[data-collection-item]'),defaultIndex=item&&item.querySelector('input[name$="[default_index]"]');
+  if(!source)return;var originalSource=source.value;if(!originalSource){originalSource=url&&url.value?(url.value.indexOf('/storage/')===0?'upload':'url'):(defaultIndex&&defaultIndex.value!==''?'default':'upload');source.value=originalSource}
+ picker._initialSource=originalSource;if(status)status._initialText=initialStatus;
  function select(method){source.value=method;picker.querySelectorAll('[data-media-method]').forEach(function(button){var active=button.dataset.mediaMethod===method;button.classList.toggle('is-active',active);button.setAttribute('aria-selected',active?'true':'false')});picker.querySelectorAll('[data-media-panel]').forEach(function(panel){panel.hidden=panel.dataset.mediaPanel!==method})}
  picker.querySelectorAll('[data-media-method]').forEach(function(button){button.addEventListener('click',function(){picker.classList.remove('is-reset');select(button.dataset.mediaMethod);if(button.dataset.mediaMethod==='url'){var upload=picker.querySelector('[data-upload]');if(upload)clearUpload(upload);if(status)status.textContent=url&&url.value?'URL di bawah akan digunakan setelah disimpan.':initialStatus}})});
  if(url)url.addEventListener('input',function(){picker.classList.remove('is-reset');source.value='url';if(status)status.textContent=url.value?'URL baru siap digunakan. Klik “Simpan perubahan” untuk menerapkan.':'Tempel URL langsung file media.'});
  var reset=picker.querySelector('[data-media-reset]');if(reset)reset.addEventListener('click',function(){if(url)url.value='';var upload=picker.querySelector('[data-upload]');if(upload)clearUpload(upload);if(status)status.textContent='Media bawaan akan digunakan kembali setelah perubahan disimpan.';picker.classList.add('is-reset');select('upload');source.value='default'});
-  var originalSource=source.value;select(originalSource==='url'?'url':'upload');if(originalSource==='default')source.value='default';
+  select(originalSource==='url'?'url':'upload');if(originalSource==='default')source.value='default';
  });}
  window.initCmsMediaInputs=function(scope){initUploads(scope||document);initPickers(scope||document)};window.initCmsMediaInputs(document);
 })();

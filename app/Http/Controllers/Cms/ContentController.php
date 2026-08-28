@@ -181,9 +181,23 @@ class ContentController extends Controller
         $prepared = [];
         foreach ($submitted as $itemKey => $item) {
             $title = trim((string) ($item['title'] ?? ''));
-            $source = (string) ($item['source'] ?? 'upload');
+            $source = (string) ($item['source'] ?? '');
             $url = trim((string) ($item['url'] ?? ''));
             $file = $request->file("collection_media.{$itemKey}");
+            $defaultIndex = isset($item['default_index']) && $item['default_index'] !== '' ? (int) $item['default_index'] : null;
+
+            // Older/cached versions of the collection form could submit an empty
+            // source value. Infer it from the media that is already attached so a
+            // harmless title edit does not make every gallery/video item invalid.
+            if ($source === '') {
+                $source = match (true) {
+                    $file !== null => 'upload',
+                    $url !== '' && str_starts_with($url, '/storage/') => 'upload',
+                    $url !== '' => 'url',
+                    $defaultIndex !== null => 'default',
+                    default => 'upload',
+                };
+            }
             if ($title === '') {
                 throw ValidationException::withMessages(["collection_items.{$itemKey}.title" => 'Judul setiap item wajib diisi.']);
             }
@@ -191,7 +205,6 @@ class ContentController extends Controller
                 throw ValidationException::withMessages(["collection_items.{$itemKey}.source" => 'Sumber media tidak valid.']);
             }
 
-            $defaultIndex = isset($item['default_index']) && $item['default_index'] !== '' ? (int) $item['default_index'] : null;
             if ($source === 'default' && ($defaultIndex === null || ! isset($defaults[$defaultIndex]))) {
                 throw ValidationException::withMessages(["collection_items.{$itemKey}.source" => 'Media bawaan untuk item ini tidak tersedia.']);
             }
