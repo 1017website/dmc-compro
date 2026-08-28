@@ -156,6 +156,18 @@ class CmsWebsiteTest extends TestCase
             ->assertSee('font-size: clamp(34px, 2.9vw, 48px)', false);
     }
 
+    public function test_video_portfolio_cards_use_a_uniform_size_and_footer_logo_has_contrast(): void
+    {
+        $response = $this->get('/');
+
+        $response->assertOk()
+            ->assertSee('.portfolio-mockup-card.is-featured {', false)
+            ->assertSee('grid-column: span 6', false)
+            ->assertSee('.is-featured .portfolio-thumbnail { min-height: 0; aspect-ratio: 16 / 9; }', false)
+            ->assertSee('.is-featured .portfolio-mockup-copy { min-height: 190px; padding: 28px; }', false)
+            ->assertSee('background: var(--white)', false);
+    }
+
     public function test_hero_background_can_be_uploaded_from_content_cms_and_rendered(): void
     {
         Storage::fake('public');
