@@ -156,18 +156,17 @@ class CmsWebsiteTest extends TestCase
             ->assertSee('font-size: clamp(34px, 2.9vw, 48px)', false);
     }
 
-    public function test_video_portfolio_keeps_a_compact_featured_card_and_footer_logo_has_contrast(): void
+    public function test_video_portfolio_cards_are_aligned_and_footer_logo_has_contrast(): void
     {
         $response = $this->get('/');
 
         $response->assertOk()
-            ->assertSee('width: min(100%, 860px)', false)
+            ->assertSee('grid-column: span 3', false)
             ->assertSee('.portfolio-mockup-card.is-featured {', false)
-            ->assertSee('grid-column: 1 / -1', false)
-            ->assertSee('grid-template-columns: minmax(0, 1.45fr) minmax(260px, .55fr)', false)
+            ->assertSee('justify-self: stretch', false)
             ->assertSee('box-shadow: inset 0 4px 0 var(--red)', false)
-            ->assertSee('.is-featured .portfolio-thumbnail { min-height: 300px; aspect-ratio: auto; }', false)
-            ->assertSee('.is-featured .portfolio-mockup-copy { min-height: 300px; padding: 28px; }', false)
+            ->assertSee('.is-featured .portfolio-thumbnail { min-height: 0; aspect-ratio: 16 / 9; }', false)
+            ->assertSee('.is-featured .portfolio-mockup-copy { min-height: 168px; padding: 22px; }', false)
             ->assertSee('filter: brightness(0) invert(1)', false);
     }
 
@@ -200,7 +199,10 @@ class CmsWebsiteTest extends TestCase
             ->assertSee('<button class="modal-close js-close-modal" type="button" aria-label="Tutup video">×</button>', false)
             ->assertDontSee('<button class="modal-close js-close-modal" type="button" aria-label="Tutup video">© 2026 PT. Dynamika Multi Compro</button>', false)
             ->assertSee("galleryModalClose.textContent = '×'", false)
-            ->assertSee("videoModalClose.textContent = '×'", false);
+            ->assertSee("videoModalClose.textContent = '×'", false)
+            ->assertSee('.modal-close::before {', false)
+            ->assertSee('content: "×"', false)
+            ->assertSee('font-size: 0', false);
     }
 
     public function test_hero_background_can_be_uploaded_from_content_cms_and_rendered(): void
