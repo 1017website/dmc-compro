@@ -1427,11 +1427,10 @@ video {
   display: block;
   width: min(190px, 42vw);
   height: 72px;
-  box-sizing: border-box;
-  padding: 10px 14px;
-  background: var(--white);
+  filter: brightness(0) invert(1);
   object-fit: contain;
-  object-position: center;
+  object-position: left center;
+  opacity: .94;
 }
 
 .footer-brand p {
@@ -2524,20 +2523,21 @@ body[data-language="zh"] .hero h1 { letter-spacing: -.045em; }
 
 .portfolio-mockup-grid {
   display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr));
   gap: 14px;
-  margin-top: 70px;
+  margin-top: 54px;
 }
 .portfolio-mockup-card {
   position: relative;
-  grid-column: span 6;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
   overflow: hidden;
   background: var(--ink);
   color: var(--white);
 }
 .portfolio-mockup-card.is-featured {
-  display: block;
-  grid-column: span 6;
+  box-shadow: inset 0 4px 0 var(--red);
 }
 .portfolio-thumbnail {
   position: relative;
@@ -2601,12 +2601,13 @@ body[data-language="zh"] .hero h1 { letter-spacing: -.045em; }
 }
 .portfolio-mockup-copy {
   display: flex;
-  min-height: 190px;
+  min-height: 168px;
+  flex: 1;
   flex-direction: column;
   justify-content: space-between;
-  padding: 28px;
+  padding: 22px;
 }
-.is-featured .portfolio-mockup-copy { min-height: 190px; padding: 28px; }
+.is-featured .portfolio-mockup-copy { min-height: 168px; padding: 22px; }
 .portfolio-mockup-copy small {
   color: var(--red);
   font-size: 8px;
@@ -2615,13 +2616,13 @@ body[data-language="zh"] .hero h1 { letter-spacing: -.045em; }
   text-transform: uppercase;
 }
 .portfolio-mockup-copy h3 {
-  margin: 20px 0 12px;
-  font-size: 22px;
+  margin: 16px 0 10px;
+  font-size: 20px;
   font-weight: 570;
   letter-spacing: -.04em;
   line-height: 1.15;
 }
-.is-featured .portfolio-mockup-copy h3 { font-size: 22px; }
+.is-featured .portfolio-mockup-copy h3 { font-size: 24px; }
 .portfolio-mockup-copy p {
   margin: 0;
   color: rgba(255,255,255,.48);
@@ -2658,11 +2659,11 @@ body[data-language="zh"] .hero h1 { letter-spacing: -.045em; }
 
 @media (max-width: 960px) {
   .portfolio-heading { grid-template-columns: 1fr; gap: 34px; }
-  .portfolio-mockup-card, .portfolio-mockup-card.is-featured { grid-column: span 6; }
-  .portfolio-mockup-card.is-featured { display: block; }
+  .portfolio-mockup-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .portfolio-mockup-card, .portfolio-mockup-card.is-featured { grid-column: auto; }
   .is-featured .portfolio-thumbnail { min-height: 0; aspect-ratio: 16 / 9; }
-  .is-featured .portfolio-mockup-copy { min-height: 240px; padding: 30px; }
-  .is-featured .portfolio-mockup-copy h3 { font-size: 29px; }
+  .portfolio-mockup-copy, .is-featured .portfolio-mockup-copy { min-height: 180px; padding: 24px; }
+  .portfolio-mockup-copy h3, .is-featured .portfolio-mockup-copy h3 { font-size: 22px; }
 }
 
 @media (max-width: 580px) {
@@ -2670,10 +2671,10 @@ body[data-language="zh"] .hero h1 { letter-spacing: -.045em; }
   .partner-pt-garam-logo img { max-height: 82px; }
   .video-portfolio-section { padding: 76px 0; }
   .portfolio-heading h2 { font-size: 40px; }
-  .portfolio-mockup-grid { margin-top: 44px; }
-  .portfolio-mockup-card, .portfolio-mockup-card.is-featured { grid-column: 1 / -1; }
-  .portfolio-mockup-copy, .is-featured .portfolio-mockup-copy { min-height: 210px; padding: 24px; }
-  .portfolio-mockup-copy h3, .is-featured .portfolio-mockup-copy h3 { font-size: 24px; }
+  .portfolio-mockup-grid { grid-template-columns: 1fr; margin-top: 44px; }
+  .portfolio-mockup-card, .portfolio-mockup-card.is-featured { grid-column: auto; }
+  .portfolio-mockup-copy, .is-featured .portfolio-mockup-copy { min-height: 180px; padding: 22px; }
+  .portfolio-mockup-copy h3, .is-featured .portfolio-mockup-copy h3 { font-size: 22px; }
   .portfolio-summary { align-items: flex-start; flex-direction: column; justify-content: center; gap: 6px; }
 }
 
