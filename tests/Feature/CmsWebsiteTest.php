@@ -198,7 +198,9 @@ class CmsWebsiteTest extends TestCase
             ->assertSee('<button class="modal-close js-close-modal" type="button" aria-label="Tutup galeri">×</button>', false)
             ->assertDontSee('<button class="modal-close js-close-modal" type="button" aria-label="Tutup galeri">Kontak</button>', false)
             ->assertSee('<button class="modal-close js-close-modal" type="button" aria-label="Tutup video">×</button>', false)
-            ->assertDontSee('<button class="modal-close js-close-modal" type="button" aria-label="Tutup video">© 2026 PT. Dynamika Multi Compro</button>', false);
+            ->assertDontSee('<button class="modal-close js-close-modal" type="button" aria-label="Tutup video">© 2026 PT. Dynamika Multi Compro</button>', false)
+            ->assertSee("galleryModalClose.textContent = '×'", false)
+            ->assertSee("videoModalClose.textContent = '×'", false);
     }
 
     public function test_hero_background_can_be_uploaded_from_content_cms_and_rendered(): void
