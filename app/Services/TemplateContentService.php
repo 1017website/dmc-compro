@@ -16,9 +16,16 @@ class TemplateContentService
 
     private ?array $cachedFields = null;
 
+    private ?string $cachedSource = null;
+
+    /**
+     * The template is an 8 MB single file and a single page render used to read it
+     * three or four times over (render, fields, dynamicFields, media collections),
+     * allocating a fresh copy each time. One copy per instance is plenty.
+     */
     public function source(): string
     {
-        return file_get_contents(resource_path('templates/dmc-pro.html')) ?: '';
+        return $this->cachedSource ??= (file_get_contents(resource_path('templates/dmc-pro.html')) ?: '');
     }
 
     public function fields(): array
@@ -107,30 +114,41 @@ class TemplateContentService
         return $this->cachedFields = [...$fields, ...$this->dynamicFields()];
     }
 
-    public function render(array $settings = []): string
+    public function render(array $settings = [], bool $preview = false): string
     {
         $overrides = SiteContent::query()->get()->keyBy('content_key');
         $source = str_replace('var copy = {', 'var copy = window.__dmcCmsCopy = {', $this->source());
         $tokens = $this->tokens($source);
+        unset($source);
         $state = ['tag' => null, 'group' => 'Umum', 'element' => null, 'elements' => []];
         $textIndex = 0;
         $attributeIndex = 0;
         $attributeAliases = [];
+        $editableKeys = [];
         foreach ($this->fields() as $field) {
+            $editableKeys[$field['key']] = true;
             foreach ($field['aliases'] ?? [] as $alias) {
                 $attributeAliases[$alias] = $field['key'];
             }
         }
 
-        foreach ($tokens as &$token) {
+        // tokenIndex => list of field keys, collected while walking and written back
+        // afterwards. Mutating a different element of $tokens mid-iteration would be
+        // unsafe, and the opening tag we need is always behind the current position.
+        $annotations = [];
+
+        foreach ($tokens as $index => &$token) {
             if (str_starts_with($token, '<')) {
-                $this->updateState($token, $state);
-                $token = preg_replace_callback('/\b([a-zA-Z_:][-a-zA-Z0-9_:.]*)\s*=\s*(["\'])(.*?)\2/s', function (array $match) use (&$attributeIndex, $token, $overrides, $attributeAliases) {
+                $this->updateState($token, $state, $index);
+                $token = preg_replace_callback('/\b([a-zA-Z_:][-a-zA-Z0-9_:.]*)\s*=\s*(["\'])(.*?)\2/s', function (array $match) use (&$attributeIndex, &$annotations, $index, $preview, $editableKeys, $token, $overrides, $attributeAliases) {
                     if (! $this->isEditableAttribute($token, $match[1], $match[3])) {
                         return $match[0];
                     }
                     $key = sprintf('attr.%04d', ++$attributeIndex);
                     $key = $attributeAliases[$key] ?? $key;
+                    if ($preview && isset($editableKeys[$key])) {
+                        $annotations[$index][$key] = true;
+                    }
                     $value = $overrides->get($key)?->value_id;
                     if ($value === null || $value === '') {
                         return $match[0];
@@ -149,6 +167,12 @@ class TemplateContentService
             if (str_contains((string) ($state['element'] ?? ''), 'modal-close')) {
                 continue;
             }
+            if ($preview && isset($editableKeys[$key]) && $state['elements'] !== []) {
+                $owner = end($state['elements'])['index'] ?? -1;
+                if ($owner >= 0) {
+                    $annotations[$owner][$key] = true;
+                }
+            }
             $value = $overrides->get($key)?->value_id;
             if ($value !== null && $value !== '') {
                 preg_match('/^\s*/u', $token, $leading);
@@ -158,16 +182,45 @@ class TemplateContentService
         }
         unset($token);
 
+        foreach ($annotations as $index => $keys) {
+            $tokens[$index] = $this->annotateTag($tokens[$index], array_keys($keys));
+        }
+
         $html = implode('', $tokens);
+        unset($tokens);
         $html = preg_replace('/<footer\b(?![^>]*\bid=)/i', '<footer id="footer"', $html, 1) ?? $html;
         $html = str_replace('Versi demo ini belum mengirim data. Saat dipasang di hosting, formulir dapat diteruskan ke email atau WhatsApp tim DMC Pro.', 'Terima kasih. Permintaan Anda sudah tersimpan dan tim DMC Pro akan segera menindaklanjuti.', $html);
         $html = $this->applyHeroBackground($html, $overrides);
+        $html = $this->applyTypography($html);
         $html = $this->applySeo($html, $settings);
         $html = $this->applyBranding($html, $settings);
         $html = $this->wireInquiryForm($html);
         $html = str_replace('</body>', $this->clientOverrides($overrides).$this->mediaCollectionsScript($settings).$this->trackingScripts($settings).'</body>', $html);
 
+        if ($preview) {
+            $html = str_replace('</body>', $this->previewBridge().'</body>', $html);
+        }
+
         return $html;
+    }
+
+    /**
+     * Adds the CMS field keys an element owns to its opening tag, so the editor's
+     * preview can translate a click on the page into a form field and back.
+     */
+    private function annotateTag(string $token, array $keys): string
+    {
+        if ($keys === [] || ! str_starts_with($token, '<') || str_starts_with($token, '</')) {
+            return $token;
+        }
+
+        $payload = ' data-cms-key="'.htmlspecialchars(implode(' ', $keys), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8').'"';
+
+        if (preg_match('/\/>$/', $token)) {
+            return preg_replace('/\s*\/>$/', $payload.' />', $token, 1) ?? $token;
+        }
+
+        return preg_replace('/>$/', $payload.'>', $token, 1) ?? $token;
     }
 
     public function defaultMediaCollection(string $collection): array
@@ -221,7 +274,7 @@ class TemplateContentService
         return preg_split('/(<[^>]+>)/s', $html, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY) ?: [];
     }
 
-    private function updateState(string $token, array &$state): void
+    private function updateState(string $token, array &$state, int $tokenIndex = -1): void
     {
         if (preg_match('/^<\s*\/\s*([a-z0-9]+)/i', $token, $closing)) {
             $closingTag = strtolower($closing[1]);
@@ -257,7 +310,9 @@ class TemplateContentService
         }
         $descriptor .= '>';
         if (! in_array($tag, ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'], true)) {
-            $state['elements'][] = ['tag' => $tag, 'descriptor' => $descriptor];
+            // The token index lets preview mode annotate the opening tag of whichever
+            // element a text field belongs to; text nodes cannot carry attributes.
+            $state['elements'][] = ['tag' => $tag, 'descriptor' => $descriptor, 'index' => $tokenIndex];
         }
         $state['element'] = $state['elements'] !== [] ? end($state['elements'])['descriptor'] : $descriptor;
         if (in_array($tag, ['style', 'script', 'title'], true)) {
@@ -300,6 +355,12 @@ class TemplateContentService
             || (in_array($name, ['src', 'alt'], true) && preg_match('/\balt=["\']DMC Pro["\']/i', $tag))) {
             return false;
         }
+        // The product panel image is reassigned by renderBusiness() from
+        // window.__dmcBaseBusinessLines on every render, so editing the markup here
+        // has no lasting effect. It is edited through dynamic.business.*.image instead.
+        if (in_array($name, ['src', 'alt'], true) && str_contains($lowerTag, 'id="business-image"')) {
+            return false;
+        }
         if ($name === 'content') {
             return str_contains($lowerTag, 'name="description"') || str_contains($lowerTag, "name='description'");
         }
@@ -316,6 +377,15 @@ class TemplateContentService
     private function isVisibleText(string $plain, array $state, string $key): bool
     {
         $element = strtolower((string) ($state['element'] ?? ''));
+
+        // The video play buttons are icon-only by design. Their accessible name comes
+        // from the button's own aria-label, so this caption is hidden in CSS and must
+        // not be offered as an editable field.
+        foreach ($state['elements'] ?? [] as $ancestor) {
+            if (str_contains(strtolower((string) ($ancestor['descriptor'] ?? '')), 'portfolio-play')) {
+                return false;
+            }
+        }
 
         if (in_array($key, [
             'text.0038', 'text.0039',
@@ -442,6 +512,117 @@ class TemplateContentService
         };
     }
 
+    /**
+     * Runs only inside the CMS editor iframe. Turns the live page into a picker: a
+     * click reports the field keys of whatever was clicked, and the editor can send
+     * back highlight requests and unsaved values for an instant preview.
+     */
+    private function previewBridge(): string
+    {
+        $script = <<<'JS'
+<style>
+[data-cms-key]{cursor:pointer}
+[data-cms-key]:hover{outline:2px dashed rgba(227,25,25,.65);outline-offset:2px}
+.dmc-cms-active{outline:3px solid #e31919 !important;outline-offset:3px;transition:outline-color 140ms ease}
+</style>
+<script>
+(function(){
+ 'use strict';
+ var ORIGIN=window.location.origin;
+ function post(payload){payload.source='dmc-cms-preview';try{window.parent.postMessage(payload,ORIGIN);}catch(e){}}
+ function clearActive(){Array.prototype.forEach.call(document.querySelectorAll('.dmc-cms-active'),function(n){n.classList.remove('dmc-cms-active');});}
+ function mark(node){clearActive();node.classList.add('dmc-cms-active');}
+
+ // Overlays would cover the page the editor is trying to show, so they stay shut
+ // here. Product tabs are deliberately left working — switching lines is the only
+ // way to preview the second product panel.
+ document.addEventListener('click',function(event){
+  var blocked=event.target.closest('.gallery-item,.js-open-video,.js-portfolio-play');
+  if(blocked){event.preventDefault();event.stopPropagation();}
+  var link=event.target.closest('a[href]');
+  if(link){var href=link.getAttribute('href')||'';if(href&&href.charAt(0)!=='#')event.preventDefault();}
+  var owner=event.target.closest('[data-cms-key]');
+  if(!owner)return;
+  mark(owner);
+  post({type:'pick',keys:(owner.getAttribute('data-cms-key')||'').split(/\s+/).filter(Boolean)});
+ },true);
+
+ var nodes=null,baseline=[];
+ function collect(){
+  var list=[],walker=document.createTreeWalker(document.documentElement,NodeFilter.SHOW_TEXT,{acceptNode:function(n){
+   if(!n.nodeValue.trim()||['SCRIPT','STYLE'].includes(n.parentElement&&n.parentElement.tagName))return NodeFilter.FILTER_REJECT;
+   return NodeFilter.FILTER_ACCEPT;}});
+  while(walker.nextNode())list.push(walker.currentNode);
+  return list;
+ }
+ function ensure(){if(!nodes){nodes=collect();baseline=nodes.map(function(n){return n.nodeValue;});}}
+
+ // Text fields are numbered by document order on the server, so the nth accepted
+ // text node is the nth key. An empty box previews the last saved wording again.
+ window.__dmcCmsSetText=function(key,value){
+  ensure();
+  var index=parseInt(String(key).split('.')[1],10);
+  var node=nodes[index-1];
+  if(!node)return;
+  node.nodeValue=(value===''||value==null)?baseline[index-1]:value;
+ };
+
+ window.__dmcCmsSetDynamic=function(line,field,value){
+  var base=window.__dmcBaseBusinessLines&&window.__dmcBaseBusinessLines[line];
+  if(!base)return;
+  var parsed=value;
+  if(field==='bullets')parsed=String(value).split(/\r?\n/).filter(Boolean);
+  if(field==='tags')parsed=String(value).split(',').map(function(v){return v.trim();}).filter(Boolean);
+  base[field]=parsed;
+  ['id','en','zh'].forEach(function(lang){
+   var copy=window.__dmcCmsCopy&&window.__dmcCmsCopy[lang]&&window.__dmcCmsCopy[lang].business&&window.__dmcCmsCopy[lang].business.lines[line];
+   if(copy)copy[field]=parsed;
+  });
+  var tab=document.querySelector('[data-business="'+line+'"]');
+  if(tab)tab.click();
+ };
+
+ window.addEventListener('message',function(event){
+  if(event.origin!==ORIGIN)return;
+  var data=event.data;
+  if(!data||data.source!=='dmc-cms-editor')return;
+  if(data.type==='focus'){
+   var node=document.querySelector('[data-cms-key~="'+data.key+'"]');
+   if(!node)return;
+   mark(node);
+   node.scrollIntoView({behavior:'smooth',block:'center'});
+   return;
+  }
+  if(data.type==='text')window.__dmcCmsSetText(data.key,data.value);
+  if(data.type==='dynamic')window.__dmcCmsSetDynamic(data.line,data.field,data.value);
+ });
+
+ window.setTimeout(function(){ensure();post({type:'ready'});},400);
+})();
+</script>
+JS;
+
+        return $script;
+    }
+
+    /**
+     * The webfont is injected here instead of being written into the template head
+     * on purpose: a <link href> inside the template would be picked up as an
+     * editable attribute, adding a meaningless field to the CMS and shifting every
+     * attr.* index that follows it. The template only declares the family names.
+     *
+     * The variable axis matters — the stylesheet asks for weights 430, 550, 570,
+     * 590, 650, 680, 730 and 760, which only resolve against a variable font.
+     */
+    private function applyTypography(string $html): string
+    {
+        $fonts = '<link rel="preconnect" href="https://fonts.googleapis.com">'
+            .'<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+            .'<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200..800&display=swap">';
+
+        return str_replace('</head>', $fonts."\n</head>", $html);
+    }
+
     private function applySeo(string $html, array $settings): string
     {
         $esc = fn (?string $value) => htmlspecialchars($value ?? '', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
@@ -482,8 +663,16 @@ class TemplateContentService
         }
         if ($footerLogo !== null) {
             $html = preg_replace_callback(
-                '/<div\s+class=(["\'])footer-brand\1>.*?<\/div>/s',
-                fn () => '<div class="footer-brand"><img src="'.$footerLogo.'" alt="DMC Pro"></div>',
+                '/<div\s+class=(["\'])footer-brand\1>(.*?)<\/div>/s',
+                function (array $match) use ($footerLogo) {
+                    // Only the lettermark is swapped for the uploaded logo. The company
+                    // line underneath has its own styling (.footer-brand p) and owns a
+                    // CMS field, so dropping it both broke the design and made that
+                    // field edit nothing.
+                    preg_match('/<p\b[^>]*>.*?<\/p>/s', $match[2], $caption);
+
+                    return '<div class="footer-brand"><img src="'.$footerLogo.'" alt="DMC Pro">'.($caption[0] ?? '').'</div>';
+                },
                 $html,
                 1,
             ) ?? $html;
@@ -526,16 +715,26 @@ JS;
 
         return <<<HTML
 <script>
-(function(){var values={$json},dynamic={$dynamicJson};function normalize(field,value){if(field==='bullets')return value.split(/\\r?\\n/).filter(Boolean);if(field==='tags')return value.split(',').map(function(v){return v.trim();}).filter(Boolean);return value;}function patchDynamic(){Object.keys(dynamic).forEach(function(line){Object.keys(dynamic[line]).forEach(function(field){['id','en','zh'].forEach(function(lang){var value=dynamic[line][field][lang];if(!value)return;value=normalize(field,value);if(window.__dmcCmsCopy&&window.__dmcCmsCopy[lang]&&window.__dmcCmsCopy[lang].business.lines[line])window.__dmcCmsCopy[lang].business.lines[line][field]=value;if(lang==='id'&&window.__dmcBaseBusinessLines&&window.__dmcBaseBusinessLines[line])window.__dmcBaseBusinessLines[line][field]=value;});});});}function apply(){var lang=document.body.getAttribute('data-language')||'id',i=0;var walker=document.createTreeWalker(document.documentElement,NodeFilter.SHOW_TEXT,{acceptNode:function(n){if(!n.nodeValue.trim()||['SCRIPT','STYLE'].includes(n.parentElement&&n.parentElement.tagName))return NodeFilter.FILTER_REJECT;return NodeFilter.FILTER_ACCEPT;}});while(walker.nextNode()){i++;if(values[i]&&values[i][lang])walker.currentNode.nodeValue=values[i][lang];}}patchDynamic();document.querySelectorAll('[data-lang]').forEach(function(b){b.addEventListener('click',function(){setTimeout(apply,40);});});setTimeout(apply,0);if(Object.keys(dynamic).length){var active=document.querySelector('[data-business].is-active');if(active)setTimeout(function(){active.click();},10);}})();
+(function(){var values={$json},dynamic={$dynamicJson};function normalize(field,value){if(field==='bullets')return value.split(/\\r?\\n/).filter(Boolean);if(field==='tags')return value.split(',').map(function(v){return v.trim();}).filter(Boolean);return value;}function patchDynamic(){Object.keys(dynamic).forEach(function(line){Object.keys(dynamic[line]).forEach(function(field){['id','en','zh'].forEach(function(lang){var value=dynamic[line][field][lang];if(!value)return;value=normalize(field,value);if(window.__dmcCmsCopy&&window.__dmcCmsCopy[lang]&&window.__dmcCmsCopy[lang].business.lines[line])window.__dmcCmsCopy[lang].business.lines[line][field]=value;if(lang==='id'&&window.__dmcBaseBusinessLines&&window.__dmcBaseBusinessLines[line])window.__dmcBaseBusinessLines[line][field]=value;});});});}function apply(){var lang=document.body.getAttribute('data-language')||'id',i=0;var walker=document.createTreeWalker(document.documentElement,NodeFilter.SHOW_TEXT,{acceptNode:function(n){if(!n.nodeValue.trim()||['SCRIPT','STYLE'].includes(n.parentElement&&n.parentElement.tagName))return NodeFilter.FILTER_REJECT;return NodeFilter.FILTER_ACCEPT;}});while(walker.nextNode()){i++;if(values[i]&&values[i][lang])walker.currentNode.nodeValue=values[i][lang];}}function paintActiveBusiness(){var active=document.querySelector('[data-business].is-active');var key=active?active.getAttribute('data-business'):'salt';var base=window.__dmcBaseBusinessLines&&window.__dmcBaseBusinessLines[key];if(!base)return;var image=document.getElementById('business-image');if(image&&base.image&&image.getAttribute('src')!==base.image)image.src=base.image;var share=document.getElementById('business-share');if(share&&base.share)share.textContent=base.share;}patchDynamic();paintActiveBusiness();document.querySelectorAll('[data-lang]').forEach(function(b){b.addEventListener('click',function(){setTimeout(apply,40);});});setTimeout(apply,0);if(Object.keys(dynamic).length){var active=document.querySelector('[data-business].is-active');if(active)setTimeout(function(){active.click();},10);}})();
 </script>
 HTML;
     }
 
     private function dynamicFields(): array
     {
+        // The product panel is rebuilt by the template's own renderBusiness() on load
+        // and on every tab click, reading from window.__dmcBaseBusinessLines. Anything
+        // shown there has to be edited through these dynamic keys — a plain attr.*/text.*
+        // override gets overwritten by that script a moment after the page paints.
         $labels = [
-            'eyebrow' => 'Label kecil', 'title' => 'Judul', 'description' => 'Deskripsi',
-            'imageAlt' => 'Deskripsi gambar untuk Google', 'bullets' => 'Daftar poin (satu per baris)', 'tags' => 'Kategori (pisahkan dengan koma)',
+            'eyebrow' => ['label' => 'Label kecil', 'type' => 'text', 'translatable' => true],
+            'title' => ['label' => 'Judul', 'type' => 'text', 'translatable' => true],
+            'description' => ['label' => 'Deskripsi', 'type' => 'textarea', 'translatable' => true],
+            'image' => ['label' => 'Foto produk', 'type' => 'image', 'translatable' => false],
+            'imageAlt' => ['label' => 'Deskripsi gambar untuk Google', 'type' => 'text', 'translatable' => true],
+            'share' => ['label' => 'Angka porsi portofolio', 'type' => 'text', 'translatable' => false],
+            'bullets' => ['label' => 'Daftar poin (satu per baris)', 'type' => 'textarea', 'translatable' => true],
+            'tags' => ['label' => 'Kategori (pisahkan dengan koma)', 'type' => 'textarea', 'translatable' => true],
         ];
         $lines = ['salt' => 'Garam Industri', 'chemical' => 'Bahan Baku Kimia untuk Industri'];
         $defaults = [];
@@ -558,20 +757,29 @@ HTML;
             'anchor' => '#top',
         ]];
         foreach ($lines as $line => $lineLabel) {
-            foreach ($labels as $field => $label) {
+            foreach ($labels as $field => $meta) {
                 $default = $defaults[$line][$field] ?? '';
                 if (is_array($default)) {
                     $default = implode($field === 'tags' ? ', ' : "\n", $default);
                 }
+                // The built-in product photos are inline base64, which must never be
+                // poured into a text input as a default value.
+                if ($meta['type'] === 'image') {
+                    $default = null;
+                }
                 $fields[] = [
                     'key' => "dynamic.business.{$line}.{$field}",
                     'group' => 'Detail Produk',
-                    'label' => "{$lineLabel} · {$label}",
-                    'help' => 'Konten detail untuk lini produk '.$lineLabel.'.',
-                    'type' => in_array($field, ['description', 'bullets', 'tags'], true) ? 'textarea' : 'text',
+                    'label' => "{$lineLabel} · {$meta['label']}",
+                    'help' => $meta['type'] === 'image'
+                        ? 'Foto besar yang tampil di panel '.$lineLabel.'. Rekomendasi 1200 × 1500 piksel (potret).'
+                        : ($field === 'share'
+                            ? 'Angka yang tampil pada badge porsi portofolio, misalnya "50%".'
+                            : 'Konten detail untuk lini produk '.$lineLabel.'.'),
+                    'type' => $meta['type'],
                     'default' => $default,
                     'inline_media' => false,
-                    'translatable' => true,
+                    'translatable' => $meta['translatable'],
                     'aliases' => [],
                     'anchor' => '#produk',
                 ];
@@ -653,7 +861,7 @@ HTML;
  }
  if(Object.prototype.hasOwnProperty.call(collections,'videos')){
   var videoGrid=document.querySelector('.portfolio-mockup-grid'),videoOriginals=videoGrid?Array.prototype.map.call(videoGrid.querySelectorAll('.portfolio-mockup-card'),function(node){return node.cloneNode(true);}):[],modalVideo=document.getElementById('modal-video'),defaultVideo=modalVideo?(modalVideo.currentSrc||modalVideo.querySelector('source')&&modalVideo.querySelector('source').src||''):'';
-  if(videoGrid){videoGrid.classList.add('has-dynamic-items');var videoNodes=collections.videos.map(function(item,index){var node=(videoOriginals[item.default_index]||videoOriginals[0]);if(!node)return null;node=node.cloneNode(true);node.classList.toggle('is-featured',index===0);node.dataset.portfolioCard=String(index);var number=node.querySelector('.portfolio-card-number'),category=node.querySelector('.portfolio-mockup-copy small'),title=node.querySelector('h3'),description=node.querySelector('.portfolio-mockup-copy p'),button=node.querySelector('.js-portfolio-play'),play=node.querySelector('.portfolio-play small'),image=node.querySelector('img'),poster=image&&image.src,duration=node.querySelector('.portfolio-card-meta span:last-child');if(number)number.textContent=String(index+1).padStart(2,'0');if(category)category.textContent=item.category||'Video';if(title)title.textContent=item.title||('Video '+(index+1));if(description)description.textContent=item.description||'';if(play)play.textContent=index===0?'Putar Video':'Putar';if(image&&item.poster_url){image.src=item.poster_url;poster=item.poster_url;}else if(image&&item.source!=='default'&&item.url){var preview=document.createElement('video');preview.src=item.url;preview.muted=true;preview.preload='metadata';preview.playsInline=true;preview.setAttribute('aria-hidden','true');preview.addEventListener('loadedmetadata',function(){if(duration&&isFinite(preview.duration)){var seconds=Math.round(preview.duration);duration.textContent=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');}});image.replaceWith(preview);}if(button){button.setAttribute('aria-label','Putar · '+(item.title||'Video'));button.addEventListener('click',function(){if(!modalVideo)return;modalVideo.pause();modalVideo.src=item.url||defaultVideo;if(poster)modalVideo.poster=poster;var modal=document.getElementById('video-modal');modal.hidden=false;document.body.style.overflow='hidden';modalVideo.load();var result=modalVideo.play();if(result&&typeof result.catch==='function')result.catch(function(){});});}return node;}).filter(Boolean);videoGrid.replaceChildren.apply(videoGrid,videoNodes.length?videoNodes:[Object.assign(document.createElement('div'),{className:'media-collection-empty',textContent:'Belum ada video portofolio.'})]);var count=document.querySelector('.portfolio-heading-copy strong');if(count)count.textContent=collections.videos.length+' Video Portfolio · DMC Pro 2026';}
+  if(videoGrid){videoGrid.classList.add('has-dynamic-items');var videoNodes=collections.videos.map(function(item,index){var node=(videoOriginals[item.default_index]||videoOriginals[0]);if(!node)return null;node=node.cloneNode(true);node.classList.toggle('is-featured',index===0);node.dataset.portfolioCard=String(index);var number=node.querySelector('.portfolio-card-number'),category=node.querySelector('.portfolio-mockup-copy small'),title=node.querySelector('h3'),description=node.querySelector('.portfolio-mockup-copy p'),button=node.querySelector('.js-portfolio-play'),image=node.querySelector('img'),poster=image&&image.src,duration=node.querySelector('.portfolio-card-meta span:last-child');if(number)number.textContent=String(index+1).padStart(2,'0');if(category)category.textContent=item.category||'Video';if(title)title.textContent=item.title||('Video '+(index+1));if(description)description.textContent=item.description||'';if(image&&item.poster_url){image.src=item.poster_url;poster=item.poster_url;}else if(image&&item.source!=='default'&&item.url){var preview=document.createElement('video');preview.src=item.url;preview.muted=true;preview.preload='metadata';preview.playsInline=true;preview.setAttribute('aria-hidden','true');preview.addEventListener('loadedmetadata',function(){if(duration&&isFinite(preview.duration)){var seconds=Math.round(preview.duration);duration.textContent=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');}});image.replaceWith(preview);}if(button){button.setAttribute('aria-label','Putar · '+(item.title||'Video'));button.addEventListener('click',function(){if(!modalVideo)return;modalVideo.pause();modalVideo.src=item.url||defaultVideo;if(poster)modalVideo.poster=poster;var modal=document.getElementById('video-modal');modal.hidden=false;document.body.style.overflow='hidden';modalVideo.load();var result=modalVideo.play();if(result&&typeof result.catch==='function')result.catch(function(){});});}return node;}).filter(Boolean);videoGrid.replaceChildren.apply(videoGrid,videoNodes.length?videoNodes:[Object.assign(document.createElement('div'),{className:'media-collection-empty',textContent:'Belum ada video portofolio.'})]);var count=document.querySelector('.portfolio-heading-copy strong');if(count)count.textContent=collections.videos.length+' Video Portfolio · DMC Pro 2026';}
  }
  function restoreCollectionCopy(){if(collections.gallery)document.querySelectorAll('.gallery-item').forEach(function(node,index){var item=collections.gallery[index];if(!item)return;node.dataset.title=item.title||'';node.dataset.meta=item.meta||'';node.setAttribute('aria-label',item.title||'Foto galeri');var small=node.querySelector('.gallery-overlay small'),strong=node.querySelector('.gallery-overlay strong');if(small)small.textContent=item.meta||'';if(strong)strong.textContent=item.title||'';});if(collections.videos)document.querySelectorAll('[data-portfolio-card]').forEach(function(node,index){var item=collections.videos[index];if(!item)return;var category=node.querySelector('.portfolio-mockup-copy small'),title=node.querySelector('h3'),description=node.querySelector('.portfolio-mockup-copy p');if(category)category.textContent=item.category||'Video';if(title)title.textContent=item.title||('Video '+(index+1));if(description)description.textContent=item.description||'';});var count=document.querySelector('.portfolio-heading-copy strong');if(count&&collections.videos)count.textContent=collections.videos.length+' Video Portfolio · DMC Pro 2026';}
  document.querySelectorAll('[data-lang]').forEach(function(button){button.addEventListener('click',function(){window.setTimeout(restoreCollectionCopy,60);});});

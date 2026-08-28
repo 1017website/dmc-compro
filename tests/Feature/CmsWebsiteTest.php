@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Inquiry;
+use App\Models\PageView;
 use App\Models\SiteContent;
 use App\Models\SiteSetting;
 use App\Models\User;
@@ -94,7 +95,9 @@ class CmsWebsiteTest extends TestCase
     {
         $this->seed(SiteContentTranslationSeeder::class);
 
-        $this->assertSame(174, SiteContent::query()->count());
+        // 170, not 174: the four play-button captions are hidden now, so the seeder
+        // skips them. Their translations stay in the JSON in case the caption returns.
+        $this->assertSame(170, SiteContent::query()->count());
         $this->assertSame(0, SiteContent::query()
             ->whereNull('value_id')->orWhereNull('value_en')->orWhereNull('value_zh')
             ->count());
@@ -453,5 +456,159 @@ class CmsWebsiteTest extends TestCase
             ->assertOk()
             ->assertSee('admin@dmc.com')
             ->assertViewHas('users', fn ($users) => $users->every(fn (User $user) => $user->role !== 'developer'));
+    }
+    public function test_frontend_uses_the_variable_webfont_and_no_unreadable_type(): void
+    {
+        $html = $this->get('/')->assertOk()->getContent();
+
+        $this->assertStringContainsString('Plus+Jakarta+Sans:wght@200..800', $html);
+        $this->assertStringContainsString('--font-geist-sans: "Plus Jakarta Sans"', $html);
+
+        // The stylesheet asks for weights like 570 and 730, which only resolve
+        // against a variable font, so the axis request above has to stay.
+        $this->assertStringContainsString('font-weight: 570', $html);
+
+        preg_match_all('/font-size:\s*([0-9.]+)px/', $html, $matches);
+        $this->assertNotEmpty($matches[1]);
+        $tooSmall = array_values(array_filter($matches[1], fn (string $size) => (float) $size < 12));
+        $this->assertSame([], $tooSmall, 'Found type below 12px: '.implode(', ', $tooSmall));
+    }
+
+    public function test_video_play_buttons_show_no_caption(): void
+    {
+        $html = $this->get('/')->assertOk()->getContent();
+
+        $this->assertStringContainsString(".portfolio-play small {\n  display: none;\n}", $html);
+
+        // The buttons stay reachable without the visible caption.
+        $this->assertStringContainsString('aria-label="Putar video kemitraan DMC Pro dan PT Garam"', $html);
+
+        // And the hidden caption must not be listed as something to edit.
+        $captions = collect(app(TemplateContentService::class)->fields())
+            ->filter(fn (array $field) => in_array($field['default'], ['Putar', 'Putar Video'], true));
+
+        $this->assertCount(0, $captions, 'Hidden play captions are still offered as fields.');
+    }
+
+    public function test_product_panel_photo_and_share_are_editable_and_reach_the_page(): void
+    {
+        Storage::fake('public');
+        $this->seed();
+        $this->actingAs(User::query()->where('role', 'developer')->firstOrFail());
+
+        $fields = collect(app(TemplateContentService::class)->fields());
+
+        // The markup-level image field for this panel was a no-op: the template's
+        // renderBusiness() reassigns the src on every render. It must not be offered.
+        $this->assertFalse(
+            $fields->contains(fn (array $field) => $field['group'] === 'Produk' && $field['type'] === 'image'),
+            'The dead product image field is still listed.',
+        );
+        $this->assertTrue($fields->contains(fn (array $field) => $field['key'] === 'dynamic.business.salt.image'));
+        $this->assertTrue($fields->contains(fn (array $field) => $field['key'] === 'dynamic.business.chemical.image'));
+
+        $this->put('/cms/content', [
+            'media' => [
+                'dynamic__business__salt__image' => UploadedFile::fake()->image('garam.jpg', 1200, 1500),
+            ],
+            'contents' => [
+                'dynamic__business__salt__share' => ['id' => '65%'],
+            ],
+        ])->assertSessionHasNoErrors();
+
+        $photo = SiteContent::query()->where('content_key', 'dynamic.business.salt.image')->value('value_id');
+        $this->assertNotNull($photo);
+        Storage::disk('public')->assertExists(str_replace('/storage/', '', $photo));
+
+        // The values have to arrive in the payload renderBusiness() reads from,
+        // otherwise the script would paint the built-in photo straight over them.
+        $html = $this->get('/')->assertOk()->getContent();
+        $this->assertStringContainsString($photo, $html);
+        $this->assertStringContainsString('"share":{"id":"65%"', $html);
+        $this->assertStringContainsString('paintActiveBusiness', $html);
+        $this->assertStringContainsString('base.share ||', $html);
+    }
+
+    public function test_footer_company_line_survives_a_logo_upload(): void
+    {
+        Storage::fake('public');
+        $this->seed();
+        $this->actingAs(User::query()->where('role', 'developer')->firstOrFail());
+
+        $this->put('/cms/branding', [
+            'frontend_logo' => UploadedFile::fake()->image('logo.png', 400, 140),
+        ])->assertSessionHasNoErrors();
+
+        $logo = SiteSetting::query()->where('setting_key', 'frontend_logo')->value('value');
+        $this->assertNotNull($logo);
+
+        $html = $this->get('/')->assertOk()->getContent();
+        preg_match('/<div class="footer-brand">.*?<\/div>/s', $html, $footer);
+
+        $this->assertNotEmpty($footer, 'The footer brand block is missing.');
+        $this->assertStringContainsString($logo, $footer[0]);
+        $this->assertStringContainsString('PT. Dynamika Multi Compro', $footer[0]);
+    }
+
+    public function test_preview_annotations_are_limited_to_signed_in_editors(): void
+    {
+        $this->seed();
+
+        $guest = $this->get('/?cms_preview=1')->assertOk()->getContent();
+        $this->assertStringNotContainsString('data-cms-key', $guest);
+        $this->assertStringNotContainsString('__dmcCmsSetText', $guest);
+
+        $this->actingAs(User::query()->where('role', 'developer')->firstOrFail());
+
+        $plain = $this->get('/')->assertOk()->getContent();
+        $this->assertStringNotContainsString('data-cms-key', $plain);
+
+        $preview = $this->get('/?cms_preview=1')->assertOk()->getContent();
+        $this->assertStringContainsString('__dmcCmsSetText', $preview);
+        $this->assertStringContainsString('__dmcCmsSetDynamic', $preview);
+
+        // Every field the CMS lists for the markup must be reachable from a click.
+        preg_match_all('/data-cms-key="([^"]+)"/', $preview, $matches);
+        $annotated = [];
+        foreach ($matches[1] as $group) {
+            foreach (preg_split('/\s+/', $group) as $key) {
+                $annotated[$key] = true;
+            }
+        }
+
+        $expected = collect(app(TemplateContentService::class)->fields())
+            ->reject(fn (array $field) => str_starts_with($field['key'], 'dynamic.'))
+            ->pluck('key');
+
+        $missing = $expected->reject(fn (string $key) => isset($annotated[$key]))->values();
+        $this->assertSame([], $missing->all(), 'Unreachable fields: '.$missing->take(8)->implode(', '));
+    }
+
+    public function test_preview_visits_are_not_counted_as_traffic(): void
+    {
+        $this->seed();
+        $this->actingAs(User::query()->where('role', 'developer')->firstOrFail());
+
+        $this->get('/?cms_preview=1')->assertOk();
+        $this->assertSame(0, PageView::query()->count());
+
+        $this->get('/')->assertOk();
+        $this->assertSame(1, PageView::query()->count());
+    }
+
+    public function test_content_editor_ships_a_two_way_live_preview(): void
+    {
+        $this->seed();
+        $this->actingAs(User::query()->where('role', 'developer')->firstOrFail());
+
+        $this->get('/cms/content/hero')->assertOk()
+            ->assertSee('Pratinjau langsung')
+            ->assertSee('Klik teks atau foto di pratinjau untuk membuka kolomnya.')
+            ->assertSee('cms_preview=1', false)
+            ->assertSee('data-preview-frame', false)
+            ->assertSee('data-field-key="dynamic.hero.background"', false)
+            ->assertSee('dmc-cms-editor', false)
+            ->assertSee('Sembunyikan pratinjau')
+            ->assertViewHas('fieldDirectory', fn (array $directory) => ($directory['text.0238']['slug'] ?? null) === 'footer');
     }
 }

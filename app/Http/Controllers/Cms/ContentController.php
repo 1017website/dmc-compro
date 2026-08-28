@@ -44,12 +44,22 @@ class ContentController extends Controller
             $fields = $fields->take(3)->values();
         }
 
+        // Clicking something in the preview can land on a field that lives in another
+        // section. This map lets the editor say where it is instead of going quiet.
+        $directory = collect($template->fields())
+            ->mapWithKeys(fn (array $field) => [$field['key'] => [
+                'group' => $field['group'],
+                'slug' => Str::slug($field['group']),
+            ]])
+            ->all();
+
         return view('cms.content.edit', [
             'groupName' => $groupName,
             'fields' => $fields,
             'saved' => SiteContent::query()->get()->keyBy('content_key'),
             'collectionName' => $collectionName,
             'collectionItems' => $collectionName ? $this->collectionItems($collectionName, $template) : [],
+            'fieldDirectory' => $directory,
         ]);
     }
 
