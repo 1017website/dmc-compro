@@ -474,6 +474,50 @@ class CmsWebsiteTest extends TestCase
         $this->assertSame([], $tooSmall, 'Found type below 12px: '.implode(', ', $tooSmall));
     }
 
+    public function test_configured_video_portfolio_keeps_every_card_the_same_width(): void
+    {
+        $this->seed();
+
+        $items = [];
+        foreach (range(0, 3) as $index) {
+            $items[] = [
+                'key' => 'item-'.$index, 'source' => 'default', 'default_index' => $index,
+                'url' => null, 'title' => 'Video '.($index + 1),
+                'category' => 'Kategori', 'description' => 'Deskripsi.',
+            ];
+        }
+        SiteSetting::query()->updateOrCreate(
+            ['setting_key' => 'media_collection_videos'],
+            ['value' => json_encode($items)],
+        );
+
+        $html = $this->get('/')->assertOk()->getContent();
+
+        // The old override swapped the 12-column track for auto-fit and only reset
+        // grid-column on non-featured cards, so the first card kept a 3-column span
+        // and swallowed most of the row once the script ran.
+        $this->assertStringNotContainsString(
+            '.portfolio-mockup-grid.has-dynamic-items{grid-template-columns:repeat(auto-fit',
+            $html,
+        );
+        $this->assertStringNotContainsString(
+            '.portfolio-mockup-card:not(.is-featured){grid-column:auto}',
+            $html,
+        );
+
+        // One span shared by every card, featured included, derived from the count.
+        $this->assertStringContainsString('.portfolio-mockup-card.is-featured{grid-column:span var(--dmc-card-span,3)}', $html);
+        $this->assertStringContainsString("videoGrid.style.setProperty('--dmc-card-span'", $html);
+        $this->assertStringContainsString('Math.min(Math.max(collections.videos.length,1),4)', $html);
+
+        // Below 961px the template's own breakpoints must stay in charge.
+        $this->assertStringContainsString('@media (min-width:961px){.portfolio-mockup-grid.has-dynamic-items', $html);
+
+        // minmax(260px, 1fr) cannot shrink, so a narrow container squeezed the last
+        // gallery track instead of dropping to fewer columns.
+        $this->assertStringContainsString('minmax(min(260px,100%),1fr)', $html);
+    }
+
     public function test_video_play_buttons_show_no_caption(): void
     {
         $html = $this->get('/')->assertOk()->getContent();
